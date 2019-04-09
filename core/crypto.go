@@ -20,7 +20,6 @@ type KeyPair struct {
 func NewECDSAKeyPair() (*KeyPair, error) {
 	pubKeyCurve := elliptic.P256()
 
-	// Generate key.
 	privateKey := new(ecdsa.PrivateKey)
 	privateKey, err := ecdsa.GenerateKey(pubKeyCurve, rand.Reader)
 	if err != nil {

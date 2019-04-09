@@ -37,7 +37,7 @@ func TestGenerateNewTransaction(t *testing.T) {
 	}
 }
 
-func TestTransactionHeaderMarshalBinary(t *testing.T) {
+func TestTransactionMarshalBinary(t *testing.T) {
 	for i := 0; i < 50; i++ {
 		from, err := NewECDSAKeyPair()
 		if err != nil {
@@ -50,8 +50,8 @@ func TestTransactionHeaderMarshalBinary(t *testing.T) {
 		}
 
 		transaction := NewTransaction(from.Public,
-			to.Public,
-			[]byte{byte(i), byte(i + 1), byte(i + 2), byte(i + 3)})
+		to.Public,
+		[]byte{byte(i), byte(i + 1), byte(i + 2), byte(i + 3)})
 		transactionBytes, err := transaction.MarshalBinary()
 		if err != nil {
 			panic(err)
@@ -65,6 +65,72 @@ func TestTransactionHeaderMarshalBinary(t *testing.T) {
 
 		if !transaction.EqualWith(newTransaction) {
 			panic(fmt.Errorf("Cannot marshal/unmarshal transaction"))
+		}
+	}
+}
+
+func TestAppendTransaction(t *testing.T) {
+	from, err := NewECDSAKeyPair()
+	if err != nil {
+		panic(err)
+	}
+	to, err := NewECDSAKeyPair()
+	if err != nil {
+		panic(err)
+	}
+
+	transaction := NewTransaction(from.Public, to.Public, []byte{1, 2, 3, 4})
+	if err != nil {
+		panic(err)
+	}
+
+	transactions := make(TransactionsList, 10)
+
+	transactions = transactions.Append(*transaction)
+	if err != nil {
+		panic(err)
+	}
+
+	isContained, index := transactions.Contains(*transaction)
+	if !isContained || index != 10 || len(transactions) != 11 {
+		panic(fmt.Errorf("Append tansaction to list failed"))
+	}
+}
+
+func TestTransactionsListMarshalBinary(t *testing.T) {
+	transactions := new(TransactionsList)
+	transactionsbkup := new(TransactionsList)
+
+	for i := 0; i < 50; i++ {
+		from, err := NewECDSAKeyPair()
+		if err != nil {
+			panic(err)
+		}
+
+		to, err := NewECDSAKeyPair()
+		if err != nil {
+			panic(err)
+		}
+
+		transaction := NewTransaction(from.Public, to.Public, []byte{byte(i), byte(i + 1), byte(i + 2), byte(i + 3)})
+		transactions.Append(*transaction)
+		transactionsbkup.Append(*transaction)
+	}
+
+	bs, err := transactions.MarshalBinary()
+	if err != nil {
+		panic(err)
+	}
+
+	newTransactions := new(TransactionsList)
+	err = newTransactions.UnMarshalBinary(bs)
+	if err != nil {
+		panic(err)
+	}
+
+	for i, t := range *newTransactions {
+		if !t.EqualWith((*transactionsbkup)[i]) {
+			panic(fmt.Errorf("Cannot marshal/unmarshal transactions"))
 		}
 	}
 }

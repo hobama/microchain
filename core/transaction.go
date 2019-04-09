@@ -58,7 +58,7 @@ func NewTransaction(from, to, meta []byte) *Transaction {
 }
 
 // Test if two transaction headers are equal.
-func (h *TransactionHeader) EqualWith(temp TransactionHeader) bool {
+func (h TransactionHeader) EqualWith(temp TransactionHeader) bool {
 	if !bytes.Equal(StripBytes(h.TransactionID, 0), StripBytes(temp.TransactionID, 0)) {
 		return false
 	}
@@ -94,8 +94,8 @@ func (h *TransactionHeader) EqualWith(temp TransactionHeader) bool {
 	return true
 }
 
-// Serialize transaction header into bytes
-func (h *TransactionHeader) MarshalBinary() ([]byte, error) {
+// Serialize transaction header into bytes.
+func (h TransactionHeader) MarshalBinary() ([]byte, error) {
 	buf := new(bytes.Buffer)
 	buf.Write(FitBytesIntoSpecificWidth(h.TransactionID, TransactionIDLength))
 	buf.Write(UInt32ToBytes(h.Timestamp))
@@ -138,7 +138,7 @@ func (h *TransactionHeader) UnMarshalBinary(data []byte) error {
 }
 
 // Test if two transactions are equal.
-func (t *Transaction) EqualWith(temp Transaction) bool {
+func (t Transaction) EqualWith(temp Transaction) bool {
 	if !t.Header.EqualWith(temp.Header) {
 		return false
 	}
@@ -151,7 +151,7 @@ func (t *Transaction) EqualWith(temp Transaction) bool {
 }
 
 // Serialize transaction into bytes.
-func (t *Transaction) MarshalBinary() ([]byte, error) {
+func (t Transaction) MarshalBinary() ([]byte, error) {
 	buf := new(bytes.Buffer)
 	h, err := t.Header.MarshalBinary()
 	if err != nil {
@@ -169,5 +169,78 @@ func (t *Transaction) UnMarshalBinary(data []byte) error {
 		return err
 	}
 	t.Meta = buf.Bytes()
+	return nil
+}
+
+// We have 2 ways to represent transactions in a block
+// (1) TransactionsList: Consume lower memory, but low performace
+// (2) TransactionsMap: High performance, but consume more memory
+type TransactionsList []Transaction
+type TransactionsMap struct {
+	mapping map[string]Transaction
+	order []string
+}
+
+// Test if given tansaction is contained in the list.
+func (list TransactionsList) Contains(tr Transaction) (bool, int) {
+	for i, t := range list {
+		if bytes.Equal(tr.Header.TransactionID, t.Header.TransactionID) {
+			return true, i
+		}
+	}
+	return false, 0
+}
+
+// Test if transaction with given id is contained in the list.
+func (list TransactionsList) ContainsByID(id []byte) (bool, int) {
+	for i, t := range list {
+		if bytes.Equal(id, t.Header.TransactionID) {
+			return true, i
+		}
+	}
+	return false, 0
+}
+
+// Append new transaction to transaction list.
+func (list TransactionsList) Append(tr Transaction) TransactionsList {
+	return append(list, tr)
+}
+
+// Insert new transaction to transaction list.
+func (list TransactionsList) Insert(tr Transaction) TransactionsList {
+	for i, t := range list {
+		if t.Header.Timestamp >= tr.Header.Timestamp {
+			return append(append(list[:i], tr), list[i:]...)
+		}
+	}
+	return list.Append(tr)
+}
+
+// Serialize transactions into bytes.
+func (list TransactionsList) MarshalBinary() ([]byte, error) {
+	buf := new(bytes.Buffer)
+	for _, t := range list {
+		trBytes, err := t.MarshalBinary()
+		if err != nil {
+			return nil, err
+		}
+		buf.Write(trBytes)
+	}
+	return buf.Bytes(), nil
+}
+
+// Read tansaction header from bytes.
+func (list *TransactionsList) UnMarshalBinary(data []byte) error {
+	buf := bytes.NewBuffer(data)
+	ts := new(TransactionsList)
+
+	for ; buf.Len() != 0; {
+		t := new(Transaction)
+		if err := t.Header.UnMarshalBinary(buf.Next(int(TransactionHeaderLength))); err != nil {
+			return err
+		}
+		t.Meta = buf.Next(int(t.Header.MetaLength))
+		ts.Insert(*t)
+	}
 	return nil
 }
