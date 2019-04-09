@@ -33,18 +33,40 @@ func BigIntToBytes(big *big.Int, width int) ([]byte, error) {
 	return b, nil
 }
 
-// Convert uin32 to bytes
+// Convert uint32 to bytes
 func UInt32ToBytes(i uint32) []byte {
 	buf := make([]byte, 4) // uint32 => 4 bytes
 	binary.LittleEndian.PutUint32(buf, i)
 	return buf
 }
 
-// Convert uin64 to bytes
+// Convert bytes to uint32
+func BytesToUInt32(bs []byte) (uint32, error) {
+	byteslen := len(bs)
+	if byteslen > 4 {
+		return 0, fmt.Errorf("%d bytes cannot fit into uint32", byteslen)
+	}
+
+	u := binary.LittleEndian.Uint32(bs)
+	return u, nil
+}
+
+// Convert uint64 to bytes
 func UInt64ToBytes(i uint64) []byte {
 	buf := make([]byte, 8)
 	binary.LittleEndian.PutUint64(buf, i)
 	return buf
+}
+
+// Convert bytes to uint64
+func BytesToUInt64(bs []byte) (uint64, error) {
+	byteslen := len(bs)
+	if byteslen > 8 {
+		return 0, fmt.Errorf("%d bytes cannot fit into uint64", byteslen)
+	}
+
+	u := binary.LittleEndian.Uint64(bs)
+	return u, nil
 }
 
 // Concat bytes

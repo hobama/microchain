@@ -11,6 +11,7 @@ const (
 	TimestampLength         = 4
 	PublicKeyLength         = 64
 	SignatureLength         = 32
+	MetaDataLength          = 8
 	TransactionHeaderLength = 268
 )
 
@@ -43,28 +44,92 @@ type Transaction struct {
 // We use requesterID, requesteeID, timestamp to identify a transaction in blocks.
 func NewTransaction(from, to, meta []byte) *Transaction {
 	time := uint32(time.Now().Unix())
+	timeBuf := UInt32ToBytes(time)
+	rawid := JoinBytes(timeBuf, from, to)
 	transaction := Transaction{
 		Header: TransactionHeader{
+			TransactionID:      SHA256(rawid),
 			Timestamp:          time,
 			RequesterPublicKey: from,
 			RequesteePublicKey: to,
 			MetaLength:         uint64(len(meta))},
 		Meta: meta}
-	timeBuf := UInt32ToBytes(time)
-	rawid := JoinBytes(timeBuf, from, to)
-	transaction.Header.TransactionID = SHA256(rawid)
 	return &transaction
 }
 
-func (header *TransactionHeader) MarshalBinary() ([]byte, error) {
+func (h TransactionHeader) EqualWith(temp TransactionHeader) bool {
+	if !bytes.Equal(StripBytes(h.TransactionID, 0), StripBytes(temp.TransactionID, 0)) {
+		return false
+	}
+
+	if h.Timestamp != temp.Timestamp {
+		return false
+	}
+
+	if !bytes.Equal(StripBytes(h.PrevTransactionID, 0), StripBytes(temp.PrevTransactionID, 0)) {
+		return false
+	}
+
+	if !bytes.Equal(StripBytes(h.RequesterPublicKey, 0), StripBytes(temp.RequesterPublicKey, 0)) {
+		return false
+	}
+
+	if !bytes.Equal(StripBytes(h.RequesterSignature, 0), StripBytes(temp.RequesterSignature, 0)) {
+		return false
+	}
+
+	if !bytes.Equal(StripBytes(h.RequesteePublicKey, 0), StripBytes(temp.RequesteePublicKey, 0)) {
+		return false
+	}
+
+	if !bytes.Equal(StripBytes(h.RequesteeSignature, 0), StripBytes(temp.RequesteeSignature, 0)) {
+		return false
+	}
+
+	if h.MetaLength != temp.MetaLength {
+		return false
+	}
+
+	return true
+}
+
+func (h *TransactionHeader) MarshalBinary() ([]byte, error) {
 	buf := new(bytes.Buffer)
-	buf.Write(FitBytesIntoSpecificWidth(header.TransactionID, TransactionIDLength))
-	buf.Write(UInt32ToBytes(header.Timestamp))
-	buf.Write(FitBytesIntoSpecificWidth(header.PrevTransactionID, TransactionIDLength))
-	buf.Write(FitBytesIntoSpecificWidth(header.RequesterPublicKey, PublicKeyLength))
-	buf.Write(FitBytesIntoSpecificWidth(header.RequesterSignature, SignatureLength))
-	buf.Write(FitBytesIntoSpecificWidth(header.RequesteePublicKey, PublicKeyLength))
-	buf.Write(FitBytesIntoSpecificWidth(header.RequesteeSignature, SignatureLength))
-	buf.Write(UInt64ToBytes(header.MetaLength))
+	buf.Write(FitBytesIntoSpecificWidth(h.TransactionID, TransactionIDLength))
+	buf.Write(UInt32ToBytes(h.Timestamp))
+	buf.Write(FitBytesIntoSpecificWidth(h.PrevTransactionID, TransactionIDLength))
+	buf.Write(FitBytesIntoSpecificWidth(h.RequesterPublicKey, PublicKeyLength))
+	buf.Write(FitBytesIntoSpecificWidth(h.RequesterSignature, SignatureLength))
+	buf.Write(FitBytesIntoSpecificWidth(h.RequesteePublicKey, PublicKeyLength))
+	buf.Write(FitBytesIntoSpecificWidth(h.RequesteeSignature, SignatureLength))
+	buf.Write(UInt64ToBytes(h.MetaLength))
 	return buf.Bytes(), nil
+}
+
+func (h *TransactionHeader) UnMarshalBinary(data []byte) error {
+	if len(data) != TransactionHeaderLength {
+		return fmt.Errorf("Invalid transaction header")
+	}
+
+	buf := bytes.NewBuffer(data)
+
+	h.TransactionID = buf.Next(TransactionIDLength)
+	timestamp, err := BytesToUInt32(buf.Next(TimestampLength))
+	if err != nil {
+		return err
+	}
+
+	h.Timestamp = timestamp
+	h.PrevTransactionID = buf.Next(TransactionIDLength)
+	h.RequesterPublicKey = buf.Next(PublicKeyLength)
+	h.RequesterSignature = buf.Next(SignatureLength)
+	h.RequesteePublicKey = buf.Next(PublicKeyLength)
+	h.RequesteeSignature = buf.Next(SignatureLength)
+	metalen, err := BytesToUInt64(buf.Next(MetaDataLength))
+	if err != nil {
+		return err
+	}
+
+	h.MetaLength = metalen
+	return nil
 }
