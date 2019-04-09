@@ -57,7 +57,7 @@ func NewTransaction(from, to, meta []byte) *Transaction {
 	return &transaction
 }
 
-func (h TransactionHeader) EqualWith(temp TransactionHeader) bool {
+func (h *TransactionHeader) EqualWith(temp TransactionHeader) bool {
 	if !bytes.Equal(StripBytes(h.TransactionID, 0), StripBytes(temp.TransactionID, 0)) {
 		return false
 	}
@@ -113,23 +113,55 @@ func (h *TransactionHeader) UnMarshalBinary(data []byte) error {
 
 	buf := bytes.NewBuffer(data)
 
-	h.TransactionID = buf.Next(TransactionIDLength)
+	h.TransactionID = StripBytes(buf.Next(TransactionIDLength), 0)
 	timestamp, err := BytesToUInt32(buf.Next(TimestampLength))
 	if err != nil {
 		return err
 	}
 
 	h.Timestamp = timestamp
-	h.PrevTransactionID = buf.Next(TransactionIDLength)
-	h.RequesterPublicKey = buf.Next(PublicKeyLength)
-	h.RequesterSignature = buf.Next(SignatureLength)
-	h.RequesteePublicKey = buf.Next(PublicKeyLength)
-	h.RequesteeSignature = buf.Next(SignatureLength)
+	h.PrevTransactionID = StripBytes(buf.Next(TransactionIDLength), 0)
+	h.RequesterPublicKey = StripBytes(buf.Next(PublicKeyLength), 0)
+	h.RequesterSignature = StripBytes(buf.Next(SignatureLength), 0)
+	h.RequesteePublicKey = StripBytes(buf.Next(PublicKeyLength), 0)
+	h.RequesteeSignature = StripBytes(buf.Next(SignatureLength), 0)
 	metalen, err := BytesToUInt64(buf.Next(MetaDataLength))
 	if err != nil {
 		return err
 	}
 
 	h.MetaLength = metalen
+	return nil
+}
+
+func (t *Transaction) EqualWith(temp Transaction) bool {
+	if !t.Header.EqualWith(temp.Header) {
+		return false
+	}
+
+	if !bytes.Equal(t.Meta, temp.Meta) {
+		return false
+	}
+
+	return true
+}
+
+func (t *Transaction) MarshalBinary() ([]byte, error) {
+	buf := new(bytes.Buffer)
+	h, err := t.Header.MarshalBinary()
+	if err != nil {
+		return nil, err
+	}
+	buf.Write(h)
+	buf.Write(t.Meta)
+	return buf.Bytes(), nil
+}
+
+func (t *Transaction) UnMarshalBinary(data []byte) error {
+	buf := bytes.NewBuffer(data)
+	if err := t.Header.UnMarshalBinary(buf.Next(TransactionHeaderLength)); err != nil {
+		return err
+	}
+	t.Meta = buf.Bytes()
 	return nil
 }

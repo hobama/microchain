@@ -39,7 +39,6 @@ func TestGenerateNewTransaction(t *testing.T) {
 
 func TestTransactionHeaderMarshalBinary(t *testing.T) {
 	for i := 0; i < 50; i++ {
-
 		from, err := NewECDSAKeyPair()
 		if err != nil {
 			panic(err)
@@ -53,19 +52,19 @@ func TestTransactionHeaderMarshalBinary(t *testing.T) {
 		transaction := NewTransaction(from.Public,
 			to.Public,
 			[]byte{byte(i), byte(i + 1), byte(i + 2), byte(i + 3)})
-		transactionHeaderBytes, err := transaction.Header.MarshalBinary()
+		transactionBytes, err := transaction.MarshalBinary()
 		if err != nil {
 			panic(err)
 		}
 
 		var newTransaction Transaction
-		err = newTransaction.Header.UnMarshalBinary(transactionHeaderBytes)
+		err = newTransaction.UnMarshalBinary(transactionBytes)
 		if err != nil {
 			panic(err)
 		}
 
-		if !transaction.Header.EqualWith(newTransaction.Header) {
-			panic(fmt.Errorf("Cannot marshal/unmarshal transaction header"))
+		if !transaction.EqualWith(newTransaction) {
+			panic(fmt.Errorf("Cannot marshal/unmarshal transaction"))
 		}
 	}
 }
