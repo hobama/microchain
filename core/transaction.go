@@ -57,6 +57,7 @@ func NewTransaction(from, to, meta []byte) *Transaction {
 	return &transaction
 }
 
+// Test if two transaction headers are equal.
 func (h *TransactionHeader) EqualWith(temp TransactionHeader) bool {
 	if !bytes.Equal(StripBytes(h.TransactionID, 0), StripBytes(temp.TransactionID, 0)) {
 		return false
@@ -93,6 +94,7 @@ func (h *TransactionHeader) EqualWith(temp TransactionHeader) bool {
 	return true
 }
 
+// Serialize transaction header into bytes
 func (h *TransactionHeader) MarshalBinary() ([]byte, error) {
 	buf := new(bytes.Buffer)
 	buf.Write(FitBytesIntoSpecificWidth(h.TransactionID, TransactionIDLength))
@@ -106,6 +108,7 @@ func (h *TransactionHeader) MarshalBinary() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+// Read tansaction header from bytes.
 func (h *TransactionHeader) UnMarshalBinary(data []byte) error {
 	if len(data) != TransactionHeaderLength {
 		return fmt.Errorf("Invalid transaction header")
@@ -134,6 +137,7 @@ func (h *TransactionHeader) UnMarshalBinary(data []byte) error {
 	return nil
 }
 
+// Test if two transactions are equal.
 func (t *Transaction) EqualWith(temp Transaction) bool {
 	if !t.Header.EqualWith(temp.Header) {
 		return false
@@ -146,6 +150,7 @@ func (t *Transaction) EqualWith(temp Transaction) bool {
 	return true
 }
 
+// Serialize transaction into bytes.
 func (t *Transaction) MarshalBinary() ([]byte, error) {
 	buf := new(bytes.Buffer)
 	h, err := t.Header.MarshalBinary()
@@ -157,6 +162,7 @@ func (t *Transaction) MarshalBinary() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+// Read tansaction from bytes.
 func (t *Transaction) UnMarshalBinary(data []byte) error {
 	buf := bytes.NewBuffer(data)
 	if err := t.Header.UnMarshalBinary(buf.Next(TransactionHeaderLength)); err != nil {
