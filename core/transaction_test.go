@@ -37,6 +37,24 @@ func TestGenerateNewTransaction(t *testing.T) {
 	}
 }
 
+func GenRandomTransaction() *Transaction {
+	from, err := NewECDSAKeyPair()
+	if err != nil {
+		panic(err)
+	}
+
+	to, err := NewECDSAKeyPair()
+	if err != nil {
+		panic(err)
+	}
+
+	meta := GenRandomBytes(20)
+
+	transaction := NewTransaction(from.Public, to.Public, meta)
+
+	return transaction
+}
+
 func TestTransactionMarshalBinary(t *testing.T) {
 	for i := 0; i < 50; i++ {
 		from, err := NewECDSAKeyPair()
@@ -112,7 +130,8 @@ func TestTransactionsListMarshalBinary(t *testing.T) {
 			panic(err)
 		}
 
-		transaction := NewTransaction(from.Public, to.Public, []byte{byte(i), byte(i + 1), byte(i + 2), byte(i + 3)})
+		transaction := NewTransaction(from.Public, to.Public,
+		[]byte{byte(i), byte(i + 1), byte(i + 2), byte(i + 3)})
 		transactions.Append(*transaction)
 		transactionsbkup.Append(*transaction)
 	}
@@ -128,9 +147,7 @@ func TestTransactionsListMarshalBinary(t *testing.T) {
 		panic(err)
 	}
 
-	for i, t := range *newTransactions {
-		if !t.EqualWith((*transactionsbkup)[i]) {
-			panic(fmt.Errorf("Cannot marshal/unmarshal transactions"))
-		}
+	if !newTransactions.EqualWith(*transactionsbkup) {
+		panic(fmt.Errorf("Cannot marshal/unmarshal transactions"))
 	}
 }

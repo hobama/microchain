@@ -232,7 +232,6 @@ func (list TransactionsList) MarshalBinary() ([]byte, error) {
 // Read tansaction header from bytes.
 func (list *TransactionsList) UnMarshalBinary(data []byte) error {
 	buf := bytes.NewBuffer(data)
-	ts := new(TransactionsList)
 
 	for ; buf.Len() != 0; {
 		t := new(Transaction)
@@ -240,7 +239,22 @@ func (list *TransactionsList) UnMarshalBinary(data []byte) error {
 			return err
 		}
 		t.Meta = buf.Next(int(t.Header.MetaLength))
-		ts.Insert(*t)
+		*list = list.Append(*t)
 	}
 	return nil
+}
+
+// Test if two transaction lists are equal.
+func (list TransactionsList) EqualWith(temp TransactionsList) bool {
+	if len(list) != len(temp) {
+		return false
+	}
+
+	for i, t := range list {
+		if !t.EqualWith(temp[i]) {
+			return false
+		}
+	}
+
+	return true
 }
