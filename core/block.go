@@ -124,6 +124,7 @@ func (b Block) EqualWith(temp Block) bool {
 // Serialize block header into bytes.
 func (bh BlockHeader) MarshalBinary() ([]byte, error) {
 	buf := new(bytes.Buffer)
+
 	buf.Write(FitBytesIntoSpecificWidth(bh.GeneratorID, GeneratorIDLength))
 	buf.Write(FitBytesIntoSpecificWidth(bh.PrevBlockID, PrevBlockIDLength))
 	buf.Write(FitBytesIntoSpecificWidth(bh.MerkelRoot, MerkelRootLength))

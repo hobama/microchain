@@ -45,7 +45,9 @@ type Transaction struct {
 func NewTransaction(from, to, meta []byte) *Transaction {
 	time := uint32(time.Now().Unix())
 	timeBuf := UInt32ToBytes(time)
+
 	rawid := JoinBytes(timeBuf, from, to)
+
 	transaction := Transaction{
 		Header: TransactionHeader{
 			TransactionID:      SHA256(rawid),
@@ -54,6 +56,7 @@ func NewTransaction(from, to, meta []byte) *Transaction {
 			RequesteePublicKey: to,
 			MetaLength:         uint64(len(meta))},
 		Meta: meta}
+
 	return &transaction
 }
 
@@ -97,6 +100,7 @@ func (h TransactionHeader) EqualWith(temp TransactionHeader) bool {
 // Serialize transaction header into bytes.
 func (h TransactionHeader) MarshalBinary() ([]byte, error) {
 	buf := new(bytes.Buffer)
+
 	buf.Write(FitBytesIntoSpecificWidth(h.TransactionID, TransactionIDLength))
 	buf.Write(UInt32ToBytes(h.Timestamp))
 	buf.Write(FitBytesIntoSpecificWidth(h.PrevTransactionID, TransactionIDLength))
@@ -105,6 +109,7 @@ func (h TransactionHeader) MarshalBinary() ([]byte, error) {
 	buf.Write(FitBytesIntoSpecificWidth(h.RequesteePublicKey, PublicKeyLength))
 	buf.Write(FitBytesIntoSpecificWidth(h.RequesteeSignature, SignatureLength))
 	buf.Write(UInt64ToBytes(h.MetaLength))
+
 	return buf.Bytes(), nil
 }
 
@@ -128,12 +133,14 @@ func (h *TransactionHeader) UnMarshalBinary(data []byte) error {
 	h.RequesterSignature = StripBytes(buf.Next(SignatureLength), 0)
 	h.RequesteePublicKey = StripBytes(buf.Next(PublicKeyLength), 0)
 	h.RequesteeSignature = StripBytes(buf.Next(SignatureLength), 0)
+
 	metalen, err := BytesToUInt64(buf.Next(MetaDataLength))
 	if err != nil {
 		return err
 	}
 
 	h.MetaLength = metalen
+
 	return nil
 }
 
@@ -153,12 +160,15 @@ func (t Transaction) EqualWith(temp Transaction) bool {
 // Serialize transaction into bytes.
 func (t Transaction) MarshalBinary() ([]byte, error) {
 	buf := new(bytes.Buffer)
+
 	h, err := t.Header.MarshalBinary()
 	if err != nil {
 		return nil, err
 	}
+
 	buf.Write(h)
 	buf.Write(t.Meta)
+
 	return buf.Bytes(), nil
 }
 
@@ -168,7 +178,9 @@ func (t *Transaction) UnMarshalBinary(data []byte) error {
 	if err := t.Header.UnMarshalBinary(buf.Next(TransactionHeaderLength)); err != nil {
 		return err
 	}
+
 	t.Meta = buf.Bytes()
+
 	return nil
 }
 
@@ -188,6 +200,7 @@ func (list TransactionsList) Contains(tr Transaction) (bool, int) {
 			return true, i
 		}
 	}
+
 	return false, 0
 }
 
@@ -198,6 +211,7 @@ func (list TransactionsList) ContainsByID(id []byte) (bool, int) {
 			return true, i
 		}
 	}
+
 	return false, 0
 }
 
@@ -213,12 +227,14 @@ func (list TransactionsList) Insert(tr Transaction) TransactionsList {
 			return append(append(list[:i], tr), list[i:]...)
 		}
 	}
+
 	return list.Append(tr)
 }
 
 // Serialize transactions into bytes.
 func (list TransactionsList) MarshalBinary() ([]byte, error) {
 	buf := new(bytes.Buffer)
+
 	for _, t := range list {
 		trBytes, err := t.MarshalBinary()
 		if err != nil {
@@ -226,6 +242,7 @@ func (list TransactionsList) MarshalBinary() ([]byte, error) {
 		}
 		buf.Write(trBytes)
 	}
+
 	return buf.Bytes(), nil
 }
 
@@ -238,9 +255,11 @@ func (list *TransactionsList) UnMarshalBinary(data []byte) error {
 		if err := t.Header.UnMarshalBinary(buf.Next(int(TransactionHeaderLength))); err != nil {
 			return err
 		}
+
 		t.Meta = buf.Next(int(t.Header.MetaLength))
 		*list = list.Append(*t)
 	}
+
 	return nil
 }
 
