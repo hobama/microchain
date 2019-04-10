@@ -184,6 +184,12 @@ func (t *Transaction) UnMarshalBinary(data []byte) error {
 	return nil
 }
 
+// Calculate SHA256 sum of transaction.
+func (t *Transaction) Hash() []byte {
+	h, _ := t.Header.MarshalBinary()
+	return SHA256(h)
+}
+
 // We have 2 ways to represent transactions in a block
 // (1) TransactionsList: Consume lower memory, but low performace
 // (2) TransactionsMap: High performance, but consume more memory

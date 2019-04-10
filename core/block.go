@@ -54,7 +54,52 @@ func (b *Block) Sign(keypair *KeyPair) []byte {
 // Calculate sha256 sum of block header.
 func (b *Block) Hash() []byte {
 	h, _ := b.Header.MarshalBinary()
+
 	return SHA256(h)
+}
+
+// Calculate Merkel Tree.
+func (b *Block) GenerateMerkelRoot() []byte {
+	var merkell func (hashes [][]byte) []byte
+
+	merkell = func(hashes [][]byte) []byte {
+		l := len(hashes)
+		if l == 0 {
+			return nil
+		}
+
+		if l == 1 {
+			return hashes[0]
+		} else {
+			if l %2 == 1 {
+				return merkell([][]byte{merkell(hashes[:l-1]), hashes[l-1]})
+			}
+
+			bs := make([][]byte, l/2)
+
+			for i, _ := range bs {
+				j, k := i * 2, (i * 2) + 1
+				bs[i] = SHA256(append(hashes[j], hashes[k]...))
+			}
+
+			return merkell(bs)
+		}
+	}
+
+	hashes := make([][]byte, len(b.Transactions))
+	for i, t := range b.Transactions {
+		hashes[i] = t.Hash()
+	}
+
+	return merkell(hashes)
+}
+
+// Verify a block.
+func (b *Block) VerifyBlock() bool {
+	h := b.Hash()
+	merkel := b.GenerateMerkelRoot()
+
+	return bytes.Equal(merkel, b.Header.MerkelRoot) && VerifySignature(b.Header.GeneratorID, b.Signature, h)
 }
 
 // Serialize block into bytes.
@@ -98,10 +143,6 @@ func (b *Block) UnMarshalBinary(data []byte) error {
 	}
 
 	return nil
-}
-
-func (b *Block) GenerateMerkelRoot() []byte {
-	return []byte{0x00}
 }
 
 // Test if blocks are equal.
