@@ -1,153 +1,61 @@
 package core
 
 import (
-	"bytes"
-	"encoding/binary"
+	//"bytes"
 	"fmt"
 	"testing"
 )
 
-func checkTransaction(transaction *Transaction) bool {
-	timeBuf := make([]byte, 4)
-	binary.LittleEndian.PutUint32(timeBuf, transaction.Header.Timestamp)
-	rawid := JoinBytes(timeBuf, transaction.Header.RequesterPublicKey, transaction.Header.RequesteePublicKey)
-	return bytes.Equal(transaction.Header.TransactionID, SHA256(rawid))
-}
+func TestTXOutputEQ(t *testing.T) {
+	tx1 := TXOutput{Accepted: 1, Rejected: 1, NextPublicKeyHash: SHA256([]byte{0x00, 0x01, 0x02, 0x03})}
+	tx2 := TXOutput{Accepted: 1, Rejected: 1, NextPublicKeyHash: SHA256([]byte{0x00, 0x01, 0x02, 0x03})}
 
-func TestGenerateNewTransaction(t *testing.T) {
-	for i := 0; i < 5; i++ {
-		from, err := NewECDSAKeyPair()
-		if err != nil {
-			panic(err)
-		}
-		to, err := NewECDSAKeyPair()
-		if err != nil {
-			panic(err)
-		}
-
-		transaction := NewTransaction(from.Public, to.Public, []byte{1, 2, 3, 4})
-		if err != nil {
-			panic(err)
-		}
-
-		b := checkTransaction(transaction)
-		if b != true {
-			panic(fmt.Errorf("Invalid transaction generated"))
-		}
+	if !tx1.EqualWith(tx2) {
+		panic(fmt.Errorf("(TXOutput) EqualWith() testing failed."))
 	}
 }
 
-func GenRandomTransaction() *Transaction {
-	from, err := NewECDSAKeyPair()
-	if err != nil {
-		panic(err)
-	}
-
-	to, err := NewECDSAKeyPair()
-	if err != nil {
-		panic(err)
-	}
-
-	meta := GenRandomBytes(20)
-
-	transaction := NewTransaction(from.Public, to.Public, meta)
-
-	return transaction
-}
-
-func TestTransactionMarshalBinary(t *testing.T) {
-	for i := 0; i < 50; i++ {
-		from, err := NewECDSAKeyPair()
+func TestTXOutputMarshal(t *testing.T) {
+	for i := 0; i < 5; i ++ {
+		tx1 := TXOutput{Accepted: 1, Rejected: 1, NextPublicKeyHash: SHA256(GenRandomBytes(32))}
+		tx1Bytes, err := tx1.MarshalBinary()
 		if err != nil {
-			panic(err)
+			panic(fmt.Errorf("(TXOutput) MarshalBinary() testing failed."))
 		}
 
-		to, err := NewECDSAKeyPair()
+		tx2 := new(TXOutput)
+
+		err = tx2.UnmarshalBinary(tx1Bytes)
 		if err != nil {
-			panic(err)
+			panic(fmt.Errorf("(*TXOutput) UnmarshalBinary() testing failed."))
 		}
 
-		transaction := NewTransaction(from.Public,
-			to.Public,
-			[]byte{byte(i), byte(i + 1), byte(i + 2), byte(i + 3)})
-		transactionBytes, err := transaction.MarshalBinary()
-		if err != nil {
-			panic(err)
-		}
-
-		var newTransaction Transaction
-		err = newTransaction.UnmarshalBinary(transactionBytes)
-		if err != nil {
-			panic(err)
-		}
-
-		if !transaction.EqualWith(newTransaction) {
-			panic(fmt.Errorf("Cannot marshal/unmarshal transaction"))
+		if !tx1.EqualWith(*tx2) {
+			panic(fmt.Errorf("(*TXOutput) UnmarshalBinary() testing failed."))
 		}
 	}
 }
 
-func TestAppendTransaction(t *testing.T) {
-	from, err := NewECDSAKeyPair()
-	if err != nil {
-		panic(err)
-	}
-	to, err := NewECDSAKeyPair()
-	if err != nil {
-		panic(err)
+func TestTXOutputsMarshal(t *testing.T) {
+	var txos TXOutputs
+
+	for i := 0; i < 5; i ++ {
+		txos.Append(TXOutput{uint64(i), uint64(i), SHA256(GenRandomBytes(32))})
 	}
 
-	transaction := NewTransaction(from.Public, to.Public, []byte{1, 2, 3, 4})
-	if err != nil {
-		panic(err)
-	}
-
-	transactions := make(TransactionsList, 10)
-
-	transactions = transactions.Append(*transaction)
+	b, err := txos.MarshalBinary()
 	if err != nil {
 		panic(err)
 	}
 
-	isContained, index := transactions.Contains(*transaction)
-	if !isContained || index != 10 || len(transactions) != 11 {
-		panic(fmt.Errorf("Append tansaction to list failed"))
-	}
-}
+	txoss := new(TXOutputs)
 
-func TestTransactionsListMarshalBinary(t *testing.T) {
-	transactions := new(TransactionsList)
-	transactionsbkup := new(TransactionsList)
-
-	for i := 0; i < 50; i++ {
-		from, err := NewECDSAKeyPair()
-		if err != nil {
-			panic(err)
-		}
-
-		to, err := NewECDSAKeyPair()
-		if err != nil {
-			panic(err)
-		}
-
-		transaction := NewTransaction(from.Public, to.Public,
-			[]byte{byte(i), byte(i + 1), byte(i + 2), byte(i + 3)})
-		transactions.Append(*transaction)
-		transactionsbkup.Append(*transaction)
-	}
-
-	bs, err := transactions.MarshalBinary()
+	err = txoss.UnmarshalBinary(b)
 	if err != nil {
 		panic(err)
 	}
 
-	newTransactions := new(TransactionsList)
-	err = newTransactions.UnmarshalBinary(bs)
-	if err != nil {
-		panic(err)
-	}
-
-	if !newTransactions.EqualWith(*transactionsbkup) {
-		panic(fmt.Errorf("Cannot marshal/unmarshal transactions"))
+	if !txos.EqualWith(*txoss) {
+		panic(fmt.Errorf("(*TXOutputs) UnmarshalBinary() testing failed."))
 	}
 }

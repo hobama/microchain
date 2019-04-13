@@ -6,7 +6,6 @@ import (
 	"time"
 )
 
-// Buffer size definitions.
 var (
 	TransactionIDBufferSize     = 32
 	TimestampBufferSize         = 4
@@ -14,13 +13,15 @@ var (
 	SignatureBufferSize         = 32
 	MetaDataLenBufferSize       = 8
 	PublicKeyHashBufferSize     = 32
+	TXOutputBufferSize          = 48
 	TXOutputLenBufferSize       = 8
-	TransactionHeaderBufferSize = 2*TransactionIDBufferSize + // TransactionID + PrevTransactionID
-		TimestampBufferSize + // Timestamp
-		2*PublicKeyBufferSize + // RequesterPublicKey + RequesteePublicKey
-		2*SignatureBufferSize + // RequesterSignature + RequesteeSignature
-		MetaDataLenBufferSize + // MetaDataLen
-		TXOutputLenBufferSize // TXOutputLen
+	TransactionHeaderBufferSize =
+	    2*TransactionIDBufferSize + // TransactionID + PrevTransactionID
+		TimestampBufferSize       + // Timestamp
+		2*PublicKeyBufferSize     + // RequesterPublicKey + RequesteePublicKey
+		2*SignatureBufferSize     + // RequesterSignature + RequesteeSignature
+		MetaDataLenBufferSize     + // MetaDataLen
+		TXOutputLenBufferSize       // TXOutputLen
 )
 
 // The output field contains the following 3 entries:
@@ -32,6 +33,7 @@ type TXOutput struct {
 	Rejected          uint64
 	NextPublicKeyHash []byte
 }
+type TXOutputs []TXOutput
 
 type TransactionHeader struct {
 	TransactionID      []byte // SHA256(requesterPK, requesteePK, timestamp) : 256-bits : 32-bytes
@@ -48,7 +50,7 @@ type TransactionHeader struct {
 type Transaction struct {
 	Header TransactionHeader // Header
 	Meta   []byte            // Meta data field
-	Output []TXOutput        // TXOutput        // TXOutput
+	Output TXOutputs         // TXOutput        // TXOutput
 }
 
 // We use requesterID, requesteeID, timestamp to identify a transaction in blocks.
@@ -71,7 +73,7 @@ func NewTransaction(from, to, meta []byte) *Transaction {
 }
 
 // Test if two TXOutputs are equal.
-func (txo TXOutput) EuqalWith(temp TXOutput) bool {
+func (txo TXOutput) EqualWith(temp TXOutput) bool {
 	if txo.Accepted != temp.Accepted {
 		return false
 	}
@@ -100,6 +102,86 @@ func (txo TXOutput) MarshalBinary() ([]byte, error) {
 
 // Read TXOutput from bytes.
 func (txo *TXOutput) UnmarshalBinary(data []byte) error {
+	if len(data) != TXOutputBufferSize {
+		return fmt.Errorf("Invalid TXOutput")
+	}
+
+	buf := bytes.NewBuffer(data)
+
+	acc, err := BytesToUInt64(buf.Next(8))
+	if err != nil {
+		return err
+	}
+
+	txo.Accepted = acc
+
+	rej, err := BytesToUInt64(buf.Next(8))
+	if err != nil {
+		return err
+	}
+
+	txo.Rejected = rej
+
+	txo.NextPublicKeyHash = buf.Bytes()
+
+	return nil
+}
+
+// Test if two TXOutputLists are equal
+func (txos TXOutputs) EqualWith(temp TXOutputs) bool {
+	if len(txos) != len(temp) {
+		return false
+	}
+
+	for i, txo := range txos {
+		if !txo.EqualWith(temp[i]) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Append new TXOutput to XOutputs.
+func (txos TXOutputs) Append(txo TXOutput) TXOutputs {
+	return append(txos, txo)
+}
+
+// Serialize TXOutputs into bytes.
+func (txos TXOutputs) MarshalBinary() ([]byte, error) {
+	buf := new(bytes.Buffer)
+
+	for _, txo := range txos {
+		b, err := txo.MarshalBinary()
+		if err != nil {
+			return nil, fmt.Errorf("Cannot serialize TXOutputs into bytes.")
+		}
+
+		buf.Write(b)
+	}
+
+	return buf.Bytes(), nil
+}
+
+// Read TXOutputs from bytes.
+func (txos *TXOutputs) UnmarshalBinary(data []byte) error {
+	if len(data) % TXOutputBufferSize != 0 {
+		return fmt.Errorf("Invalid TXOutputs.")
+	}
+
+	buf := bytes.NewBuffer(data)
+
+	for buf.Len() != 0 {
+		txo := new(TXOutput)
+
+		err := txo.UnmarshalBinary(buf.Next(int(TXOutputBufferSize)))
+		if err != nil {
+			return err
+		}
+
+		*txos = txos.Append(*txo)
+	}
+
 	return nil
 }
 
