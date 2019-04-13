@@ -62,6 +62,20 @@ func TestTransactionEQ(t *testing.T) {
 	}
 }
 
+func TestTransactionsListEQ(t *testing.T) {
+	var trs TransactionsList
+
+	for i := 0; i < 10; i ++ {
+		trs.Append(genRandomTransaction())
+	}
+
+	trs2 := trs
+
+	if !trs.EqualWith(trs2) {
+		panic(fmt.Errorf("(Transactions) EqualWith() testing failed."))
+	}
+}
+
 func TestTXOutputMarshal(t *testing.T) {
 	for i := 0; i < 5; i ++ {
 		tx1 := genRandomTXOutput()
@@ -144,5 +158,29 @@ func TestTransactionMarshal(t *testing.T) {
 
 	if !tr2.EqualWith(tr) {
 		panic(fmt.Errorf("(*Transaction) UnmarshalBinary() testing failed."))
+	}
+}
+
+func TestTransactionsListMarshal(t *testing.T) {
+	var trs TransactionsList
+
+	for i := 0; i < 10; i ++ {
+		trs.Append(genRandomTransaction())
+	}
+
+	trsBytes, err := trs.MarshalBinary()
+	if err != nil {
+		panic(err)
+	}
+
+	trs2 := new(TransactionsList)
+
+	err = trs2.UnmarshalBinary(trsBytes)
+	if err != nil {
+		panic(err)
+	}
+
+	if !trs2.EqualWith(trs) {
+		panic(fmt.Errorf("(*TransactionsList) UnmarshalBinary() testing failed."))
 	}
 }
