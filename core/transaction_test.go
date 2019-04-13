@@ -1,9 +1,9 @@
 package core
 
 import (
+	"bytes"
 	"encoding/binary"
 	"fmt"
-	"reflect"
 	"testing"
 )
 
@@ -11,7 +11,7 @@ func checkTransaction(transaction *Transaction) bool {
 	timeBuf := make([]byte, 4)
 	binary.LittleEndian.PutUint32(timeBuf, transaction.Header.Timestamp)
 	rawid := JoinBytes(timeBuf, transaction.Header.RequesterPublicKey, transaction.Header.RequesteePublicKey)
-	return reflect.DeepEqual(transaction.Header.TransactionID, SHA256(rawid))
+	return bytes.Equal(transaction.Header.TransactionID, SHA256(rawid))
 }
 
 func TestGenerateNewTransaction(t *testing.T) {
@@ -68,15 +68,15 @@ func TestTransactionMarshalBinary(t *testing.T) {
 		}
 
 		transaction := NewTransaction(from.Public,
-		to.Public,
-		[]byte{byte(i), byte(i + 1), byte(i + 2), byte(i + 3)})
+			to.Public,
+			[]byte{byte(i), byte(i + 1), byte(i + 2), byte(i + 3)})
 		transactionBytes, err := transaction.MarshalBinary()
 		if err != nil {
 			panic(err)
 		}
 
 		var newTransaction Transaction
-		err = newTransaction.UnMarshalBinary(transactionBytes)
+		err = newTransaction.UnmarshalBinary(transactionBytes)
 		if err != nil {
 			panic(err)
 		}
@@ -131,7 +131,7 @@ func TestTransactionsListMarshalBinary(t *testing.T) {
 		}
 
 		transaction := NewTransaction(from.Public, to.Public,
-		[]byte{byte(i), byte(i + 1), byte(i + 2), byte(i + 3)})
+			[]byte{byte(i), byte(i + 1), byte(i + 2), byte(i + 3)})
 		transactions.Append(*transaction)
 		transactionsbkup.Append(*transaction)
 	}
@@ -142,7 +142,7 @@ func TestTransactionsListMarshalBinary(t *testing.T) {
 	}
 
 	newTransactions := new(TransactionsList)
-	err = newTransactions.UnMarshalBinary(bs)
+	err = newTransactions.UnmarshalBinary(bs)
 	if err != nil {
 		panic(err)
 	}

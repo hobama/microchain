@@ -5,26 +5,29 @@ import (
 	"fmt"
 )
 
-const (
-	BlockHeaderLength = 140
-	GeneratorIDLength = PublicKeyLength
-	PrevBlockIDLength = 32
-	MerkelRootLength  = 32
-	TransactionsNumLength = 8
+var (
+	GeneratorIDBufferSize     = PublicKeyBufferSize
+	PrevBlockIDBufferSize     = 32
+	MerkelRootBufferSize      = 32
+	TransactionsNumBufferSize = 8
+	BlockHeaderBufferSize     = 2*GeneratorIDBufferSize +
+		MerkelRootBufferSize +
+		TimestampBufferSize +
+		TransactionsNumBufferSize
 )
 
 type BlockHeader struct {
-	GeneratorID        []byte   // Block generator ID
-	PrevBlockID        []byte   // ID of previoud block
-	MerkelRoot         []byte   // We use merkel tree to verify blocks
-	Timestamp          uint32   // Timestamp of block generation
-	TransactionsLength uint64   // Length of transactions in this block
+	GeneratorID        []byte // Block generator ID                   : 256-bits : 32-bytes
+	PrevBlockID        []byte // ID of previoud block                 : 256-bits : 32-bytes
+	MerkelRoot         []byte // We use merkel tree to verify blocks  : 256-bits : 32-bytes
+	Timestamp          uint32 // Timestamp of block generation        : 32-bits  : 4-bytes
+	TransactionsLength uint64 // Length of transactions in this block : 64-bits  : 8-bytes
 }
 
 type Block struct {
-	Header            BlockHeader // Block header
-	Signature         []byte
-	Transactions      TransactionsList
+	Header       BlockHeader // Block header
+	Signature    []byte      // Signature by generator
+	Transactions TransactionsList
 }
 
 // Generate new block.
@@ -58,50 +61,6 @@ func (b *Block) Hash() []byte {
 	return SHA256(h)
 }
 
-// Calculate Merkel Tree.
-func (b *Block) GenerateMerkelRoot() []byte {
-	var merkell func (hashes [][]byte) []byte
-
-	merkell = func(hashes [][]byte) []byte {
-		l := len(hashes)
-		if l == 0 {
-			return nil
-		}
-
-		if l == 1 {
-			return hashes[0]
-		} else {
-			if l %2 == 1 {
-				return merkell([][]byte{merkell(hashes[:l-1]), hashes[l-1]})
-			}
-
-			bs := make([][]byte, l/2)
-
-			for i, _ := range bs {
-				j, k := i * 2, (i * 2) + 1
-				bs[i] = SHA256(append(hashes[j], hashes[k]...))
-			}
-
-			return merkell(bs)
-		}
-	}
-
-	hashes := make([][]byte, len(b.Transactions))
-	for i, t := range b.Transactions {
-		hashes[i] = t.Hash()
-	}
-
-	return merkell(hashes)
-}
-
-// Verify a block.
-func (b *Block) VerifyBlock() bool {
-	h := b.Hash()
-	merkel := b.GenerateMerkelRoot()
-
-	return bytes.Equal(merkel, b.Header.MerkelRoot) && VerifySignature(b.Header.GeneratorID, b.Signature, h)
-}
-
 // Serialize block into bytes.
 func (b Block) MarshalBinary() ([]byte, error) {
 	bh, err := b.Header.MarshalBinary()
@@ -109,7 +68,7 @@ func (b Block) MarshalBinary() ([]byte, error) {
 		return nil, err
 	}
 
-	signature := FitBytesIntoSpecificWidth(b.Signature, SignatureLength)
+	signature := FitBytesIntoSpecificWidth(b.Signature, SignatureBufferSize)
 
 	transactions, err := b.Transactions.MarshalBinary()
 	if err != nil {
@@ -120,20 +79,20 @@ func (b Block) MarshalBinary() ([]byte, error) {
 }
 
 // Read block from bytes.
-func (b *Block) UnMarshalBinary(data []byte) error {
+func (b *Block) UnmarshalBinary(data []byte) error {
 	buf := bytes.NewBuffer(data)
 
 	bh := new(BlockHeader)
 
-	err := bh.UnMarshalBinary(buf.Next(BlockHeaderLength))
+	err := bh.UnmarshalBinary(buf.Next(BlockHeaderBufferSize))
 	if err != nil {
 		return err
 	}
 
 	b.Header = *bh
-	b.Signature = StripBytes(buf.Next(SignatureLength), 0)
+	b.Signature = StripBytes(buf.Next(SignatureBufferSize), 0)
 
-	err = b.Transactions.UnMarshalBinary(buf.Next(buf.Len()))
+	err = b.Transactions.UnmarshalBinary(buf.Next(buf.Len()))
 	if err != nil {
 		return err
 	}
@@ -166,9 +125,9 @@ func (b Block) EqualWith(temp Block) bool {
 func (bh BlockHeader) MarshalBinary() ([]byte, error) {
 	buf := new(bytes.Buffer)
 
-	buf.Write(FitBytesIntoSpecificWidth(bh.GeneratorID, GeneratorIDLength))
-	buf.Write(FitBytesIntoSpecificWidth(bh.PrevBlockID, PrevBlockIDLength))
-	buf.Write(FitBytesIntoSpecificWidth(bh.MerkelRoot, MerkelRootLength))
+	buf.Write(FitBytesIntoSpecificWidth(bh.GeneratorID, GeneratorIDBufferSize))
+	buf.Write(FitBytesIntoSpecificWidth(bh.PrevBlockID, PrevBlockIDBufferSize))
+	buf.Write(FitBytesIntoSpecificWidth(bh.MerkelRoot, MerkelRootBufferSize))
 	buf.Write(UInt32ToBytes(bh.Timestamp))
 	buf.Write(UInt64ToBytes(bh.TransactionsLength))
 
@@ -176,25 +135,25 @@ func (bh BlockHeader) MarshalBinary() ([]byte, error) {
 }
 
 // Read block header from bytes.
-func (bh *BlockHeader) UnMarshalBinary(data []byte) error {
-	if len(data) != BlockHeaderLength {
+func (bh *BlockHeader) UnmarshalBinary(data []byte) error {
+	if len(data) != BlockHeaderBufferSize {
 		return fmt.Errorf("Invalid transaction header")
 	}
 
 	buf := bytes.NewBuffer(data)
 
-	bh.GeneratorID = StripBytes(buf.Next(GeneratorIDLength), 0)
-	bh.PrevBlockID = StripBytes(buf.Next(PrevBlockIDLength), 0)
-	bh.MerkelRoot = StripBytes(buf.Next(MerkelRootLength), 0)
+	bh.GeneratorID = StripBytes(buf.Next(GeneratorIDBufferSize), 0)
+	bh.PrevBlockID = StripBytes(buf.Next(PrevBlockIDBufferSize), 0)
+	bh.MerkelRoot = StripBytes(buf.Next(MerkelRootBufferSize), 0)
 
-	timestamp, err := BytesToUInt32(buf.Next(TimestampLength))
+	timestamp, err := BytesToUInt32(buf.Next(TimestampBufferSize))
 	if err != nil {
 		return err
 	}
 
 	bh.Timestamp = timestamp
 
-	transactionsLength, err := BytesToUInt64(buf.Next(TransactionsNumLength))
+	transactionsLength, err := BytesToUInt64(buf.Next(TransactionsNumBufferSize))
 	if err != nil {
 		return err
 	}
@@ -228,4 +187,3 @@ func (bh BlockHeader) EqualWith(temp BlockHeader) bool {
 
 	return true
 }
-

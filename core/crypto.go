@@ -8,8 +8,8 @@ import (
 )
 
 type KeyPair struct {
-	Public  []byte `json: "public"`
-	Private []byte `json: "private"`
+	Public  []byte
+	Private []byte
 }
 
 // Generate ECDSA key pair
