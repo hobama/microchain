@@ -10,10 +10,7 @@ var (
 	PrevBlockIDBufferSize     = 32
 	MerkelRootBufferSize      = 32
 	TransactionsNumBufferSize = 8
-	BlockHeaderBufferSize     = 2*GeneratorIDBufferSize +
-		MerkelRootBufferSize +
-		TimestampBufferSize +
-		TransactionsNumBufferSize
+	BlockHeaderBufferSize     = 2*GeneratorIDBufferSize + MerkelRootBufferSize + TimestampBufferSize + TransactionsNumBufferSize
 )
 
 type BlockHeader struct {

@@ -50,7 +50,7 @@ type TransactionHeader struct {
 type Transaction struct {
 	Header TransactionHeader // Header
 	Meta   []byte            // Meta data field
-	Output TXOutputs         // TXOutput        // TXOutput
+	Outputs TXOutputs         // TXOutput        // TXOutput
 }
 
 // We use requesterID, requesteeID, timestamp to identify a transaction in blocks.
@@ -291,6 +291,10 @@ func (t Transaction) EqualWith(temp Transaction) bool {
 		return false
 	}
 
+	if !t.Outputs.EqualWith(temp.Outputs) {
+		return false
+	}
+
 	return true
 }
 
@@ -306,17 +310,30 @@ func (t Transaction) MarshalBinary() ([]byte, error) {
 	buf.Write(h)
 	buf.Write(t.Meta)
 
+	txoBytes, err := t.Outputs.MarshalBinary()
+	if err != nil {
+		return nil, err
+	}
+
+	buf.Write(txoBytes)
+
 	return buf.Bytes(), nil
 }
 
 // Read tansaction from bytes.
 func (t *Transaction) UnmarshalBinary(data []byte) error {
 	buf := bytes.NewBuffer(data)
-	if err := t.Header.UnmarshalBinary(buf.Next(TransactionHeaderBufferSize)); err != nil {
+	err := t.Header.UnmarshalBinary(buf.Next(TransactionHeaderBufferSize))
+	if err != nil {
 		return err
 	}
 
-	t.Meta = buf.Bytes()
+	t.Meta = StripBytes(buf.Next(int(t.Header.MetaLength)), 0)
+
+	err = t.Outputs.UnmarshalBinary(buf.Bytes())
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
