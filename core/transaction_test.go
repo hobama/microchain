@@ -6,11 +6,11 @@ import (
 	"math/rand"
 )
 
-func genRandomTXOutput() TXOutput {
+func GenRandomTXOutput() TXOutput {
 	return TXOutput{uint64(rand.Intn(100)), uint64(rand.Intn(100)), SHA256(GenRandomBytes(32))}
 }
 
-func genRandomTransactionHeader() TransactionHeader {
+func GenRandomTransactionHeader() TransactionHeader {
 	return TransactionHeader{
 		SHA256(GenRandomBytes(32)),
 		uint32(rand.Intn(10000)),
@@ -23,13 +23,13 @@ func genRandomTransactionHeader() TransactionHeader {
 		uint64(rand.Intn(10))}
 }
 
-func genRandomTransaction() Transaction {
+func GenRandomTransaction() Transaction {
 	t := Transaction{}
-	t.Header = genRandomTransactionHeader()
+	t.Header = GenRandomTransactionHeader()
 	t.Meta = GenRandomBytes(int(t.Header.MetaLength))
 
 	for i := 0; i < int(t.Header.OutputLength); i ++ {
-		t.Outputs.Append(genRandomTXOutput())
+		t.Outputs.Append(GenRandomTXOutput())
 	}
 
 	return t
@@ -45,7 +45,7 @@ func TestTXOutputEQ(t *testing.T) {
 }
 
 func TestTransactionHeaderEQ(t *testing.T) {
-	th1 := genRandomTransactionHeader()
+	th1 := GenRandomTransactionHeader()
 	th2 := th1
 
 	if !th1.EqualWith(th2) {
@@ -54,7 +54,7 @@ func TestTransactionHeaderEQ(t *testing.T) {
 }
 
 func TestTransactionEQ(t *testing.T) {
-	t1 := genRandomTransaction()
+	t1 := GenRandomTransaction()
 	t2 := t1
 
 	if !t1.EqualWith(t2) {
@@ -66,7 +66,7 @@ func TestTransactionsListEQ(t *testing.T) {
 	var trs TransactionsList
 
 	for i := 0; i < 10; i ++ {
-		trs.Append(genRandomTransaction())
+		trs.Append(GenRandomTransaction())
 	}
 
 	trs2 := trs
@@ -78,7 +78,7 @@ func TestTransactionsListEQ(t *testing.T) {
 
 func TestTXOutputMarshal(t *testing.T) {
 	for i := 0; i < 5; i ++ {
-		tx1 := genRandomTXOutput()
+		tx1 := GenRandomTXOutput()
 		tx1Bytes, err := tx1.MarshalBinary()
 		if err != nil {
 			panic(fmt.Errorf("(TXOutput) MarshalBinary() testing failed."))
@@ -101,7 +101,7 @@ func TestTXOutputsMarshal(t *testing.T) {
 	var txos TXOutputs
 
 	for i := 0; i < 5; i ++ {
-		txos.Append(genRandomTXOutput())
+		txos.Append(GenRandomTXOutput())
 	}
 
 	b, err := txos.MarshalBinary()
@@ -122,7 +122,7 @@ func TestTXOutputsMarshal(t *testing.T) {
 }
 
 func TestTransactionHeaderMarshal(t *testing.T) {
-	th := genRandomTransactionHeader()
+	th := GenRandomTransactionHeader()
 
 	thBytes, err := th.MarshalBinary()
 	if err != nil {
@@ -142,7 +142,7 @@ func TestTransactionHeaderMarshal(t *testing.T) {
 }
 
 func TestTransactionMarshal(t *testing.T) {
-	tr := genRandomTransaction()
+	tr := GenRandomTransaction()
 
 	trBytes, err := tr.MarshalBinary()
 	if err != nil {
@@ -165,7 +165,7 @@ func TestTransactionsListMarshal(t *testing.T) {
 	var trs TransactionsList
 
 	for i := 0; i < 10; i ++ {
-		trs.Append(genRandomTransaction())
+		trs.Append(GenRandomTransaction())
 	}
 
 	trsBytes, err := trs.MarshalBinary()

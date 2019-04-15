@@ -10,11 +10,15 @@ var (
 	PrevBlockIDBufferSize     = 32
 	MerkelRootBufferSize      = 32
 	TransactionsNumBufferSize = 8
-	BlockHeaderBufferSize     = 2*GeneratorIDBufferSize + MerkelRootBufferSize + TimestampBufferSize + TransactionsNumBufferSize
+	BlockHeaderBufferSize     = GeneratorIDBufferSize +
+		PrevBlockIDBufferSize +
+		MerkelRootBufferSize +
+		TimestampBufferSize +
+		TransactionsNumBufferSize
 )
 
 type BlockHeader struct {
-	GeneratorID        []byte // Block generator ID                   : 256-bits : 32-bytes
+	GeneratorID        []byte // Block generator ID                   : 256-bits : 64-bytes
 	PrevBlockID        []byte // ID of previoud block                 : 256-bits : 32-bytes
 	MerkelRoot         []byte // We use merkel tree to verify blocks  : 256-bits : 32-bytes
 	Timestamp          uint32 // Timestamp of block generation        : 32-bits  : 4-bytes
@@ -125,8 +129,8 @@ func (bh BlockHeader) MarshalBinary() ([]byte, error) {
 	buf.Write(FitBytesIntoSpecificWidth(bh.GeneratorID, GeneratorIDBufferSize))
 	buf.Write(FitBytesIntoSpecificWidth(bh.PrevBlockID, PrevBlockIDBufferSize))
 	buf.Write(FitBytesIntoSpecificWidth(bh.MerkelRoot, MerkelRootBufferSize))
-	buf.Write(UInt32ToBytes(bh.Timestamp))
-	buf.Write(UInt64ToBytes(bh.TransactionsLength))
+	buf.Write(FitBytesIntoSpecificWidth(UInt32ToBytes(bh.Timestamp), TimestampBufferSize))
+	buf.Write(FitBytesIntoSpecificWidth(UInt64ToBytes(bh.TransactionsLength), TransactionsNumBufferSize))
 
 	return buf.Bytes(), nil
 }
