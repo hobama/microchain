@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-var (
+const (
 	TransactionIDBufferSize     = 32
 	TimestampBufferSize         = 4
 	PublicKeyBufferSize         = 64
@@ -15,12 +15,13 @@ var (
 	PublicKeyHashBufferSize     = 32
 	TXOutputBufferSize          = 48
 	TXOutputLenBufferSize       = 8
-	TransactionHeaderBufferSize = 2*TransactionIDBufferSize + // TransactionID + PrevTransactionID
-		TimestampBufferSize + // Timestamp
-		2*PublicKeyBufferSize + // RequesterPublicKey + RequesteePublicKey
-		2*SignatureBufferSize + // RequesterSignature + RequesteeSignature
-		MetaDataLenBufferSize + // MetaDataLen
-		TXOutputLenBufferSize // TXOutputLen
+	TransactionHeaderBufferSize =
+		TransactionIDBufferSize * 2 +
+		TimestampBufferSize         +
+		PublicKeyBufferSize     * 2 +
+		SignatureBufferSize     * 2 +
+		MetaDataLenBufferSize       +
+		TXOutputLenBufferSize
 )
 
 // The output field contains the following 3 entries:

@@ -4,7 +4,7 @@ import (
 	"bytes"
 )
 
-var (
+const (
 	MessageOptionsBufferSize = 4
 )
 

@@ -5,15 +5,16 @@ import (
 	"errors"
 )
 
-var (
+const (
 	GeneratorIDBufferSize     = PublicKeyBufferSize
 	PrevBlockIDBufferSize     = 32
 	MerkelRootBufferSize      = 32
 	TransactionsNumBufferSize = 8
-	BlockHeaderBufferSize     = GeneratorIDBufferSize +
-		PrevBlockIDBufferSize +
-		MerkelRootBufferSize +
-		TimestampBufferSize +
+	BlockHeaderBufferSize     =
+		GeneratorIDBufferSize     +
+		PrevBlockIDBufferSize     +
+		MerkelRootBufferSize      +
+		TimestampBufferSize       +
 		TransactionsNumBufferSize
 )
 
