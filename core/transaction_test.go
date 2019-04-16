@@ -2,8 +2,8 @@ package core
 
 import (
 	"fmt"
-	"testing"
 	"math/rand"
+	"testing"
 )
 
 func GenRandomTXOutput() TXOutput {
@@ -28,7 +28,7 @@ func GenRandomTransaction() Transaction {
 	t.Header = GenRandomTransactionHeader()
 	t.Meta = GenRandomBytes(int(t.Header.MetaLength))
 
-	for i := 0; i < int(t.Header.OutputLength); i ++ {
+	for i := 0; i < int(t.Header.OutputLength); i++ {
 		t.Outputs.Append(GenRandomTXOutput())
 	}
 
@@ -65,7 +65,7 @@ func TestTransactionEQ(t *testing.T) {
 func TestTransactionsListEQ(t *testing.T) {
 	var trs TransactionsList
 
-	for i := 0; i < 10; i ++ {
+	for i := 0; i < 10; i++ {
 		trs.Append(GenRandomTransaction())
 	}
 
@@ -77,7 +77,7 @@ func TestTransactionsListEQ(t *testing.T) {
 }
 
 func TestTXOutputMarshal(t *testing.T) {
-	for i := 0; i < 5; i ++ {
+	for i := 0; i < 5; i++ {
 		tx1 := GenRandomTXOutput()
 		tx1Bytes, err := tx1.MarshalBinary()
 		if err != nil {
@@ -100,7 +100,7 @@ func TestTXOutputMarshal(t *testing.T) {
 func TestTXOutputsMarshal(t *testing.T) {
 	var txos TXOutputs
 
-	for i := 0; i < 5; i ++ {
+	for i := 0; i < 5; i++ {
 		txos.Append(GenRandomTXOutput())
 	}
 
@@ -164,7 +164,7 @@ func TestTransactionMarshal(t *testing.T) {
 func TestTransactionsListMarshal(t *testing.T) {
 	var trs TransactionsList
 
-	for i := 0; i < 10; i ++ {
+	for i := 0; i < 10; i++ {
 		trs.Append(GenRandomTransaction())
 	}
 

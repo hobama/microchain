@@ -2,7 +2,7 @@ package core
 
 import (
 	"bytes"
-	"fmt"
+	"errors"
 	"time"
 )
 
@@ -15,13 +15,12 @@ var (
 	PublicKeyHashBufferSize     = 32
 	TXOutputBufferSize          = 48
 	TXOutputLenBufferSize       = 8
-	TransactionHeaderBufferSize =
-	    2*TransactionIDBufferSize + // TransactionID + PrevTransactionID
-		TimestampBufferSize       + // Timestamp
-		2*PublicKeyBufferSize     + // RequesterPublicKey + RequesteePublicKey
-		2*SignatureBufferSize     + // RequesterSignature + RequesteeSignature
-		MetaDataLenBufferSize     + // MetaDataLen
-		TXOutputLenBufferSize       // TXOutputLen
+	TransactionHeaderBufferSize = 2*TransactionIDBufferSize + // TransactionID + PrevTransactionID
+		TimestampBufferSize + // Timestamp
+		2*PublicKeyBufferSize + // RequesterPublicKey + RequesteePublicKey
+		2*SignatureBufferSize + // RequesterSignature + RequesteeSignature
+		MetaDataLenBufferSize + // MetaDataLen
+		TXOutputLenBufferSize // TXOutputLen
 )
 
 // The output field contains the following 3 entries:
@@ -39,17 +38,17 @@ type TransactionHeader struct {
 	TransactionID      []byte // SHA256(requesterPK, requesteePK, timestamp) : 256-bits : 32-bytes
 	Timestamp          uint32 // Unix timestamp                              : 32-bits  : 4-byte
 	PrevTransactionID  []byte // Previous transaction ID                     : 256-bits : 32-bytes
-	RequesterPublicKey []byte // Base58 encoding of requester public key     : 512-bits : 64-bytes
-	RequesterSignature []byte // Base58 encoding of requester signature      : 256-bits : 32-bytes
-	RequesteePublicKey []byte // Base58 encoding of requestee public key     : 512-bits : 64-bytes
-	RequesteeSignature []byte // Base58 encoding of requestee signature      : 256-bits : 32-bytes
+	RequesterPublicKey []byte // Requester public key                        : 512-bits : 64-bytes
+	RequesterSignature []byte // Requester signature                         : 256-bits : 32-bytes
+	RequesteePublicKey []byte // Requestee public key                        : 512-bits : 64-bytes
+	RequesteeSignature []byte // Requestee signature                         : 256-bits : 32-bytes
 	MetaLength         uint64 // Meta data length                            : 64-bits  : 8-bytes
 	OutputLength       uint64 // TXOutput length                             : 64-bits  : 8-bytes
 }
 
 type Transaction struct {
-	Header TransactionHeader // Header
-	Meta   []byte            // Meta data field
+	Header  TransactionHeader // Header
+	Meta    []byte            // Meta data field
 	Outputs TXOutputs         // TXOutput        // TXOutput
 }
 
@@ -103,7 +102,7 @@ func (txo TXOutput) MarshalBinary() ([]byte, error) {
 // Read TXOutput from bytes.
 func (txo *TXOutput) UnmarshalBinary(data []byte) error {
 	if len(data) != TXOutputBufferSize {
-		return fmt.Errorf("Invalid TXOutput")
+		return errors.New("Invalid TXOutput")
 	}
 
 	buf := bytes.NewBuffer(data)
@@ -154,7 +153,7 @@ func (txos TXOutputs) MarshalBinary() ([]byte, error) {
 	for _, txo := range txos {
 		b, err := txo.MarshalBinary()
 		if err != nil {
-			return nil, fmt.Errorf("Cannot serialize TXOutputs into bytes.")
+			return nil, errors.New("Cannot serialize TXOutputs into bytes.")
 		}
 
 		buf.Write(b)
@@ -165,8 +164,8 @@ func (txos TXOutputs) MarshalBinary() ([]byte, error) {
 
 // Read TXOutputs from bytes.
 func (txos *TXOutputs) UnmarshalBinary(data []byte) error {
-	if len(data) % TXOutputBufferSize != 0 {
-		return fmt.Errorf("Invalid TXOutputs.")
+	if len(data)%TXOutputBufferSize != 0 {
+		return errors.New("Invalid TXOutputs.")
 	}
 
 	buf := bytes.NewBuffer(data)
@@ -246,7 +245,7 @@ func (h TransactionHeader) MarshalBinary() ([]byte, error) {
 // Read tansaction header from bytes.
 func (h *TransactionHeader) UnmarshalBinary(data []byte) error {
 	if len(data) != TransactionHeaderBufferSize {
-		return fmt.Errorf("Invalid transaction header")
+		return errors.New("Invalid transaction header")
 	}
 
 	buf := bytes.NewBuffer(data)

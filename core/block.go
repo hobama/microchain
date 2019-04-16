@@ -2,7 +2,7 @@ package core
 
 import (
 	"bytes"
-	"fmt"
+	"errors"
 )
 
 var (
@@ -99,7 +99,7 @@ func (b *Block) UnmarshalBinary(data []byte) error {
 	}
 
 	if len(b.Transactions) != int(bh.TransactionsLength) {
-		return fmt.Errorf("Cannot Unmarshal transactions in this block")
+		return errors.New("Cannot Unmarshal transactions in this block")
 	}
 
 	return nil
@@ -138,7 +138,7 @@ func (bh BlockHeader) MarshalBinary() ([]byte, error) {
 // Read block header from bytes.
 func (bh *BlockHeader) UnmarshalBinary(data []byte) error {
 	if len(data) != BlockHeaderBufferSize {
-		return fmt.Errorf("Invalid transaction header")
+		return errors.New("Invalid transaction header")
 	}
 
 	buf := bytes.NewBuffer(data)

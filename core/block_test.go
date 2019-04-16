@@ -1,9 +1,9 @@
 package core
 
 import (
-	"testing"
-	"fmt"
+	"errors"
 	"math/rand"
+	"testing"
 )
 
 func GenRandomBlockHeader() BlockHeader {
@@ -14,7 +14,7 @@ func GenRandomBlock() Block {
 	bh := GenRandomBlockHeader()
 
 	var trs TransactionsList
-	for i := 0; i < int(bh.TransactionsLength); i ++ {
+	for i := 0; i < int(bh.TransactionsLength); i++ {
 		trs = trs.Insert(GenRandomTransaction())
 	}
 
@@ -28,7 +28,7 @@ func TestBlockHeaderEQ(t *testing.T) {
 	t2 := t1
 
 	if !t1.EqualWith(t2) {
-		panic(fmt.Errorf("(BlockHeader) EqualWith() testing failed."))
+		panic(errors.New("(BlockHeader) EqualWith() testing failed."))
 	}
 }
 
@@ -48,7 +48,7 @@ func TestBlockHeaderMarshal(t *testing.T) {
 	}
 
 	if !t2.EqualWith(t1) {
-		panic(fmt.Errorf("(BlockHeader) MarshalBinary() testing failed."))
+		panic(errors.New("(BlockHeader) MarshalBinary() testing failed."))
 	}
 }
 
@@ -57,7 +57,7 @@ func TestBlockEQ(t *testing.T) {
 	b2 := b1
 
 	if !b1.EqualWith(b2) {
-		panic(fmt.Errorf("(Block) EqualWith() testing failed."))
+		panic(errors.New("(Block) EqualWith() testing failed."))
 	}
 }
 
@@ -77,6 +77,6 @@ func TestBlockMarshal(t *testing.T) {
 	}
 
 	if !b2.EqualWith(b1) {
-		panic(fmt.Errorf("(Block) MarshalBinary() testing failed."))
+		panic(errors.New("(Block) MarshalBinary() testing failed."))
 	}
 }

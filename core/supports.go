@@ -3,6 +3,7 @@ package core
 import (
 	"crypto/sha256"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"math/big"
 	"math/rand"
@@ -26,7 +27,7 @@ func BytesToBigInt(b []byte) *big.Int {
 func BigIntToBytes(big *big.Int, width int) ([]byte, error) {
 	b := big.Bytes()
 	if len(b) > width {
-		return nil, fmt.Errorf("Length of big.Int is larger than given width")
+		return nil, errors.New("Length of big.Int is larger than given width")
 	}
 
 	zeros := make([]byte, width-len(b))
@@ -45,7 +46,7 @@ func UInt32ToBytes(i uint32) []byte {
 func BytesToUInt32(bs []byte) (uint32, error) {
 	byteslen := len(bs)
 	if byteslen > 4 {
-		return 0, fmt.Errorf("%d bytes cannot fit into uint32", byteslen)
+		return 0, errors.New(fmt.Sprintf("%d bytes cannot fit into uint32", byteslen))
 	}
 
 	u := binary.LittleEndian.Uint32(bs)
@@ -63,7 +64,7 @@ func UInt64ToBytes(i uint64) []byte {
 func BytesToUInt64(bs []byte) (uint64, error) {
 	byteslen := len(bs)
 	if byteslen > 8 {
-		return 0, fmt.Errorf("%d bytes cannot fit into uint64", byteslen)
+		return 0, errors.New(fmt.Sprintf("%d bytes cannot fit into uint64", byteslen))
 	}
 
 	u := binary.LittleEndian.Uint64(bs)
