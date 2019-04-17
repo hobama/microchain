@@ -107,3 +107,12 @@ func GenRandomBytes(l int) []byte {
 	_, _ = rand.Read(p)
 	return p
 }
+
+// Distance of two uint64.
+func Distance(a uint64, b uint64) uint64 {
+	if a >= b {
+		return a - b
+	} else {
+		return b - a
+	}
+}

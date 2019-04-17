@@ -391,7 +391,9 @@ func VerifyTransaction(tr Transaction, trs TransactionsList) bool {
 	}
 
 	// Output verification
-	if (tr.Output.Accepted + tr.Output.Rejected) - (tr_1.Output.Accepted - tr_1.Output.Rejected) > 1 {
+	dis_acc := Distance(tr.Output.Accepted, tr_1.Output.Accepted)
+	dis_rej := Distance(tr.Output.Rejected, tr_1.Output.Rejected)
+	if dis_acc + dis_rej > 1 {
 		return false
 	}
 
