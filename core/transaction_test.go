@@ -1,7 +1,7 @@
 package core
 
 import (
-	"fmt"
+	"errors"
 	"math/rand"
 	"testing"
 )
@@ -37,7 +37,7 @@ func TestTXOutputEQ(t *testing.T) {
 	tx2 := TXOutput{Accepted: 1, Rejected: 1, NextPublicKeyHash: SHA256([]byte{0x00, 0x01, 0x02, 0x03})}
 
 	if !tx1.EqualWith(tx2) {
-		panic(fmt.Errorf("(TXOutput) EqualWith() testing failed."))
+		panic(errors.New("(TXOutput) EqualWith() testing failed."))
 	}
 }
 
@@ -46,7 +46,7 @@ func TestTransactionHeaderEQ(t *testing.T) {
 	th2 := th1
 
 	if !th1.EqualWith(th2) {
-		panic(fmt.Errorf("(TransactionHeader) EqualWith() testing failed."))
+		panic(errors.New("(TransactionHeader) EqualWith() testing failed."))
 	}
 }
 
@@ -55,7 +55,7 @@ func TestTransactionEQ(t *testing.T) {
 	t2 := t1
 
 	if !t1.EqualWith(t2) {
-		panic(fmt.Errorf("(Transaction) EqualWith() testing failed."))
+		panic(errors.New("(Transaction) EqualWith() testing failed."))
 	}
 }
 
@@ -69,7 +69,7 @@ func TestTransactionsListEQ(t *testing.T) {
 	trs2 := trs
 
 	if !trs.EqualWith(trs2) {
-		panic(fmt.Errorf("(Transactions) EqualWith() testing failed."))
+		panic(errors.New("(Transactions) EqualWith() testing failed."))
 	}
 }
 
@@ -78,18 +78,18 @@ func TestTXOutputMarshal(t *testing.T) {
 		tx1 := GenRandomTXOutput()
 		tx1Bytes, err := tx1.MarshalBinary()
 		if err != nil {
-			panic(fmt.Errorf("(TXOutput) MarshalBinary() testing failed."))
+			panic(errors.New("(TXOutput) MarshalBinary() testing failed."))
 		}
 
 		tx2 := new(TXOutput)
 
 		err = tx2.UnmarshalBinary(tx1Bytes)
 		if err != nil {
-			panic(fmt.Errorf("(*TXOutput) UnmarshalBinary() testing failed."))
+			panic(errors.New("(*TXOutput) UnmarshalBinary() testing failed."))
 		}
 
 		if !tx1.EqualWith(*tx2) {
-			panic(fmt.Errorf("(*TXOutput) UnmarshalBinary() testing failed."))
+			panic(errors.New("(*TXOutput) UnmarshalBinary() testing failed."))
 		}
 	}
 }
@@ -110,7 +110,7 @@ func TestTransactionHeaderMarshal(t *testing.T) {
 	}
 
 	if !th2.EqualWith(th) {
-		panic(fmt.Errorf("(*TransactionHeader) UnmarshalBinary() testing failed."))
+		panic(errors.New("(*TransactionHeader) UnmarshalBinary() testing failed."))
 	}
 }
 
@@ -130,7 +130,7 @@ func TestTransactionMarshal(t *testing.T) {
 	}
 
 	if !tr2.EqualWith(tr) {
-		panic(fmt.Errorf("(*Transaction) UnmarshalBinary() testing failed."))
+		panic(errors.New("(*Transaction) UnmarshalBinary() testing failed."))
 	}
 }
 
@@ -154,6 +154,6 @@ func TestTransactionsListMarshal(t *testing.T) {
 	}
 
 	if !trs2.EqualWith(trs) {
-		panic(fmt.Errorf("(*TransactionsList) UnmarshalBinary() testing failed."))
+		panic(errors.New("(*TransactionsList) UnmarshalBinary() testing failed."))
 	}
 }

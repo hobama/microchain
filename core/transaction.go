@@ -214,7 +214,7 @@ func (t Transaction) EqualWith(temp Transaction) bool {
 		return false
 	}
 
-	if !bytes.Equal(t.Meta, temp.Meta) {
+	if !bytes.Equal(StripBytes(t.Meta, 0), StripBytes(temp.Meta, 0)) {
 		return false
 	}
 

@@ -85,3 +85,64 @@ func TestBlockMarshal(t *testing.T) {
 		panic(errors.New("(Block) MarshalBinary() testing failed."))
 	}
 }
+
+func TestBlockExist(t *testing.T) {
+	var bs BlockSlice
+
+	for i := 0; i < 5; i ++ {
+		b := GenRandomBlock()
+		bs = append(bs, b)
+	}
+
+	for i := 0; i < 5; i ++ {
+		b := bs[i]
+
+		ok, index := bs.Contains(b)
+
+		if !ok {
+			panic(errors.New("(BlockSlice) Contains() testing failed."))
+		}
+
+		if i != index {
+			panic(errors.New("(BlockSlice) Contains() testing failed."))
+		}
+	}
+}
+
+func TestBlockSliceEQ(t *testing.T) {
+	var bs1 BlockSlice
+
+	for i := 0; i < 5; i ++ {
+		bs1 = append(bs1, GenRandomBlock())
+	}
+
+	bs2 := bs1
+
+	if !bs1.EqualWith(bs2) {
+		panic(errors.New("(BlockSlice) EqualWith() testing failed."))
+	}
+}
+
+func TestBlockSliceMarshal(t *testing.T) {
+	var bs1 BlockSlice
+
+	for i := 0; i < 5; i ++ {
+		bs1 = append(bs1, GenRandomBlock())
+	}
+
+	bsBytes, err := bs1.MarshalBinary()
+	if err != nil {
+		panic(err)
+	}
+
+	bs2 := new(BlockSlice)
+
+	err = bs2.UnmarshalBinary(bsBytes)
+	if err != nil {
+		panic(err)
+	}
+
+	if !bs2.EqualWith(bs1) {
+		panic(errors.New("(BlocakSlice) MarshalBinary() testing failed."))
+	}
+}

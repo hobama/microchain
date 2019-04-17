@@ -32,6 +32,86 @@ type Block struct {
 	Transactions TransactionsList
 }
 
+type BlockSlice []Block
+
+// Test if one block is existed in blockslice.
+func (bs BlockSlice) Contains(b Block) (bool, int) {
+	for i, bb := range bs {
+		if b.EqualWith(bb) {
+			return true, i
+		}
+	}
+
+	return false, 0
+}
+
+// Test if two block slices are equal.
+func (bs BlockSlice) EqualWith(temp BlockSlice) bool {
+	for i, b := range bs {
+		if !b.EqualWith(temp[i]) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Serialize block slice into bytes.
+func (bs BlockSlice) MarshalBinary() ([]byte, error) {
+	buf := new(bytes.Buffer)
+
+	for _, b := range bs {
+		bBytes, err := b.MarshalBinary()
+		if err != nil {
+			return nil, err
+		}
+
+		buf.Write(bBytes)
+	}
+
+	return buf.Bytes(), nil
+}
+
+// Read block slice from bytes.
+func (bs *BlockSlice) UnmarshalBinary(data []byte) error {
+	buf := bytes.NewBuffer(data)
+
+	for ; buf.Len() != 0; {
+		var bh BlockHeader
+
+		err := bh.UnmarshalBinary(buf.Next(BlockHeaderBufferSize))
+		if err != nil {
+			return err
+		}
+
+		signature := buf.Next(SignatureBufferSize)
+
+		var trs TransactionsList
+
+		for i := 0; i < int(bh.TransactionsLength); i ++ {
+			var t Transaction
+
+			err = t.Header.UnmarshalBinary(buf.Next(TransactionHeaderBufferSize))
+			if err != nil {
+				return err
+			}
+
+			t.Meta = StripBytes(buf.Next(int(t.Header.MetaLength)), 0)
+
+			err = t.Output.UnmarshalBinary(buf.Next(TXOutputBufferSize))
+			if err != nil {
+				return err
+			}
+
+			trs = trs.Append(t)
+		}
+
+		*bs = append(*bs, Block{bh, signature, trs})
+	}
+
+	return nil
+}
+
 // Generate new block.
 func NewBlock(prevBlockID []byte) Block {
 	header := BlockHeader{PrevBlockID: prevBlockID}
@@ -48,19 +128,6 @@ func (b *Block) AppendNewTransaction(t Transaction) {
 func (b *Block) InsertNewTransaction(t Transaction) {
 	ts := b.Transactions.Insert(t)
 	b.Transactions = ts
-}
-
-// Sign on block.
-func (b *Block) Sign(keypair *KeyPair) []byte {
-	s, _ := keypair.Sign(b.Hash())
-	return s
-}
-
-// Calculate sha256 sum of block header.
-func (b *Block) Hash() []byte {
-	h, _ := b.Header.MarshalBinary()
-
-	return SHA256(h)
 }
 
 // Serialize block into bytes.
