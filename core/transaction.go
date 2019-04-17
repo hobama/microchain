@@ -20,8 +20,7 @@ const (
 		TimestampBufferSize         +
 		PublicKeyBufferSize     * 2 +
 		SignatureBufferSize     * 2 +
-		MetaDataLenBufferSize       +
-		TXOutputLenBufferSize
+		MetaDataLenBufferSize
 )
 
 // The output field contains the following 3 entries:
@@ -33,7 +32,6 @@ type TXOutput struct {
 	Rejected          uint64
 	NextPublicKeyHash []byte
 }
-type TXOutputs []TXOutput
 
 type TransactionHeader struct {
 	TransactionID      []byte // SHA256(requesterPK, requesteePK, timestamp) : 256-bits : 32-bytes
@@ -44,13 +42,12 @@ type TransactionHeader struct {
 	RequesteePublicKey []byte // Requestee public key                        : 512-bits : 64-bytes
 	RequesteeSignature []byte // Requestee signature                         : 256-bits : 32-bytes
 	MetaLength         uint64 // Meta data length                            : 64-bits  : 8-bytes
-	OutputLength       uint64 // TXOutput length                             : 64-bits  : 8-bytes
 }
 
 type Transaction struct {
 	Header  TransactionHeader // Header
 	Meta    []byte            // Meta data field
-	Outputs TXOutputs         // TXOutput        // TXOutput
+	Output  TXOutput          // TXOutput
 }
 
 // We use requesterID, requesteeID, timestamp to identify a transaction in blocks.
@@ -127,64 +124,6 @@ func (txo *TXOutput) UnmarshalBinary(data []byte) error {
 	return nil
 }
 
-// Test if two TXOutputLists are equal
-func (txos TXOutputs) EqualWith(temp TXOutputs) bool {
-	if len(txos) != len(temp) {
-		return false
-	}
-
-	for i, txo := range txos {
-		if !txo.EqualWith(temp[i]) {
-			return false
-		}
-	}
-
-	return true
-}
-
-// Append new TXOutput to XOutputs.
-func (txos TXOutputs) Append(txo TXOutput) TXOutputs {
-	return append(txos, txo)
-}
-
-// Serialize TXOutputs into bytes.
-func (txos TXOutputs) MarshalBinary() ([]byte, error) {
-	buf := new(bytes.Buffer)
-
-	for _, txo := range txos {
-		b, err := txo.MarshalBinary()
-		if err != nil {
-			return nil, errors.New("Cannot serialize TXOutputs into bytes.")
-		}
-
-		buf.Write(b)
-	}
-
-	return buf.Bytes(), nil
-}
-
-// Read TXOutputs from bytes.
-func (txos *TXOutputs) UnmarshalBinary(data []byte) error {
-	if len(data)%TXOutputBufferSize != 0 {
-		return errors.New("Invalid TXOutputs.")
-	}
-
-	buf := bytes.NewBuffer(data)
-
-	for buf.Len() != 0 {
-		txo := new(TXOutput)
-
-		err := txo.UnmarshalBinary(buf.Next(int(TXOutputBufferSize)))
-		if err != nil {
-			return err
-		}
-
-		*txos = txos.Append(*txo)
-	}
-
-	return nil
-}
-
 // Test if two transaction headers are equal.
 func (h TransactionHeader) EqualWith(temp TransactionHeader) bool {
 	if !bytes.Equal(StripBytes(h.TransactionID, 0), StripBytes(temp.TransactionID, 0)) {
@@ -219,10 +158,6 @@ func (h TransactionHeader) EqualWith(temp TransactionHeader) bool {
 		return false
 	}
 
-	if h.OutputLength != temp.OutputLength {
-		return false
-	}
-
 	return true
 }
 
@@ -238,7 +173,6 @@ func (h TransactionHeader) MarshalBinary() ([]byte, error) {
 	buf.Write(FitBytesIntoSpecificWidth(h.RequesteePublicKey, PublicKeyBufferSize))
 	buf.Write(FitBytesIntoSpecificWidth(h.RequesteeSignature, SignatureBufferSize))
 	buf.Write(UInt64ToBytes(h.MetaLength))
-	buf.Write(UInt64ToBytes(h.OutputLength))
 
 	return buf.Bytes(), nil
 }
@@ -271,13 +205,6 @@ func (h *TransactionHeader) UnmarshalBinary(data []byte) error {
 
 	h.MetaLength = metalen
 
-	outputlen, err := BytesToUInt64(buf.Next(TXOutputLenBufferSize))
-	if err != nil {
-		return err
-	}
-
-	h.OutputLength = outputlen
-
 	return nil
 }
 
@@ -291,7 +218,7 @@ func (t Transaction) EqualWith(temp Transaction) bool {
 		return false
 	}
 
-	if !t.Outputs.EqualWith(temp.Outputs) {
+	if !t.Output.EqualWith(temp.Output) {
 		return false
 	}
 
@@ -310,7 +237,7 @@ func (t Transaction) MarshalBinary() ([]byte, error) {
 	buf.Write(h)
 	buf.Write(t.Meta)
 
-	txoBytes, err := t.Outputs.MarshalBinary()
+	txoBytes, err := t.Output.MarshalBinary()
 	if err != nil {
 		return nil, err
 	}
@@ -330,7 +257,7 @@ func (t *Transaction) UnmarshalBinary(data []byte) error {
 
 	t.Meta = StripBytes(buf.Next(int(t.Header.MetaLength)), 0)
 
-	err = t.Outputs.UnmarshalBinary(buf.Bytes())
+	err = t.Output.UnmarshalBinary(buf.Bytes())
 	if err != nil {
 		return err
 	}
@@ -434,6 +361,38 @@ func (list TransactionsList) EqualWith(temp TransactionsList) bool {
 		if !t.EqualWith(temp[i]) {
 			return false
 		}
+	}
+
+	return true
+}
+
+func VerifyTransaction(tr Transaction, trs TransactionsList) bool {
+	// Find previous transaction.
+	ok, index := trs.ContainsByID(tr.Header.PrevTransactionID)
+
+	if !ok {
+		return false
+	}
+
+	tr_1 := trs[index]
+
+	// Requester verification
+	if bytes.Equal(SHA256(tr.Header.RequesterPublicKey), tr_1.Output.NextPublicKeyHash) {
+		return false
+	}
+
+	if !VerifySignature(tr.Header.RequesterPublicKey, tr.Header.RequesterSignature, SHA256(tr.Meta)) {
+		return false
+	}
+
+	// Requestee verification
+	if !VerifySignature(tr.Header.RequesteePublicKey, tr.Header.RequesteeSignature, SHA256(tr.Meta)) {
+		return false
+	}
+
+	// Output verification
+	if (tr.Output.Accepted + tr.Output.Rejected) - (tr_1.Output.Accepted - tr_1.Output.Rejected) > 1 {
+		return false
 	}
 
 	return true

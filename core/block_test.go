@@ -7,7 +7,12 @@ import (
 )
 
 func GenRandomBlockHeader() BlockHeader {
-	return BlockHeader{GenRandomBytes(32), GenRandomBytes(32), GenRandomBytes(32), rand.Uint32(), uint64(rand.Intn(10))}
+	return BlockHeader{
+		GenRandomBytes(32),
+		GenRandomBytes(32),
+		GenRandomBytes(32),
+		rand.Uint32(),
+		uint64(rand.Intn(10))}
 }
 
 func GenRandomBlock() Block {

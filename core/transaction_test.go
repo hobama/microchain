@@ -19,8 +19,7 @@ func GenRandomTransactionHeader() TransactionHeader {
 		GenRandomBytes(32),
 		GenRandomBytes(32),
 		GenRandomBytes(32),
-		uint64(rand.Intn(100)),
-		uint64(rand.Intn(10))}
+		uint64(rand.Intn(100))}
 }
 
 func GenRandomTransaction() Transaction {
@@ -28,9 +27,7 @@ func GenRandomTransaction() Transaction {
 	t.Header = GenRandomTransactionHeader()
 	t.Meta = GenRandomBytes(int(t.Header.MetaLength))
 
-	for i := 0; i < int(t.Header.OutputLength); i++ {
-		t.Outputs.Append(GenRandomTXOutput())
-	}
+	t.Output = GenRandomTXOutput()
 
 	return t
 }
@@ -94,30 +91,6 @@ func TestTXOutputMarshal(t *testing.T) {
 		if !tx1.EqualWith(*tx2) {
 			panic(fmt.Errorf("(*TXOutput) UnmarshalBinary() testing failed."))
 		}
-	}
-}
-
-func TestTXOutputsMarshal(t *testing.T) {
-	var txos TXOutputs
-
-	for i := 0; i < 5; i++ {
-		txos.Append(GenRandomTXOutput())
-	}
-
-	b, err := txos.MarshalBinary()
-	if err != nil {
-		panic(err)
-	}
-
-	txoss := new(TXOutputs)
-
-	err = txoss.UnmarshalBinary(b)
-	if err != nil {
-		panic(err)
-	}
-
-	if !txos.EqualWith(*txoss) {
-		panic(fmt.Errorf("(*TXOutputs) UnmarshalBinary() testing failed."))
 	}
 }
 
