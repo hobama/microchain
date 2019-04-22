@@ -58,5 +58,4 @@ func (p *Peer) Send(n Node, m *Message) error {
 // Broadcast messages to nodes.
 func (p *Peer) BroadcastMessage(m *Message) error {
 	return nil
-
 }
