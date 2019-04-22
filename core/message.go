@@ -1,55 +1,60 @@
 package core
 
 import (
-	_ "bytes"
+	"bytes"
+	"errors"
 )
 
 const (
-	MessageOptionsBufferSize = 4
+	MessageOptionsBufferSize int = 4
+
+	// Below are message types definitions
+	MSG_NULL byte = 0x00
+	MSG_PING byte = 0xf0
+	// ...
 )
 
-type Message interface{
-	MarshalBinary() ([]byte, error)
-	UnmarshalBinary([]byte) error
+type Message struct {
+	Type byte   // Message type
+	Data []byte // Raw data
+
+	Reply chan Message // Reply channel
 }
 
-// type Message struct {
-// 	Identifier byte
-// 	Options    []byte
-// 	Data       []byte
-// 
-// 	Reply chan Message
-// }
-
 // Test if two messages are equal.
-// func (m Message) EqualWith(temp Message) bool {
-// 	if m.Identifier != temp.Identifier {
-// 		return false
-// 	}
-// 
-// 	if !bytes.Equal(StripBytes(m.Options, 0), StripBytes(temp.Options, 0)) {
-// 		return false
-// 	}
-// 
-// 	if !bytes.Equal(StripBytes(m.Data, 0), StripBytes(temp.Data, 0)) {
-// 		return false
-// 	}
-// 
-// 	return true
-// }
+func (m Message) EqualWith(temp Message) bool {
+	if m.Type != temp.Type {
+		return false
+	}
+
+	if !bytes.Equal(StripBytes(m.Data, 0), StripBytes(temp.Data, 0)) {
+		return false
+	}
+
+	return true
+}
 
 // Serialize message into bytes.
-// func (m Message) MarshalBinary() ([]byte, error) {
-// 	buf := new(bytes.Buffer)
-// 
-// 	buf.Write([]byte{m.Identifier})
-// 	buf.Write(FitBytesIntoSpecificWidth(m.Options, MessageOptionsBufferSize))
-// 	buf.Write(m.Data)
-// 
-// 	return buf.Bytes(), nil
-// }
-// 
+func (m Message) MarshalBinary() ([]byte, error) {
+	buf := new(bytes.Buffer)
+
+	buf.Write([]byte{m.Type})
+	buf.Write(m.Data)
+
+	return buf.Bytes(), nil
+}
+
 // Read message from bytes.
-// func (m *Message) UnmarshalBinary(data []byte) error {
-// 	return nil
-// }
+func (m *Message) UnmarshalBinary(data []byte) error {
+
+	if len(data) <= 1 {
+		return errors.New("Invalid Message.")
+	}
+
+	buf := bytes.NewBuffer(data)
+
+	m.Type = buf.Next(1)[0]
+	m.Data = buf.Bytes()
+
+	return nil
+}
