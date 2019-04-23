@@ -10,12 +10,7 @@ const (
 	PrevBlockIDBufferSize     = 32
 	MerkelRootBufferSize      = 32
 	TransactionsNumBufferSize = 8
-	BlockHeaderBufferSize     =
-		GeneratorIDBufferSize     +
-		PrevBlockIDBufferSize     +
-		MerkelRootBufferSize      +
-		TimestampBufferSize       +
-		TransactionsNumBufferSize
+	BlockHeaderBufferSize     = GeneratorIDBufferSize + PrevBlockIDBufferSize + MerkelRootBufferSize + TimestampBufferSize + TransactionsNumBufferSize
 )
 
 type BlockHeader struct {
@@ -29,7 +24,7 @@ type BlockHeader struct {
 type Block struct {
 	Header       BlockHeader // Block header
 	Signature    []byte      // Signature by generator
-	Transactions TransactionsList
+	Transactions TransactionSlice
 }
 
 type BlockSlice []Block
@@ -43,6 +38,17 @@ func (bs BlockSlice) Contains(b Block) (bool, int) {
 	}
 
 	return false, 0
+}
+
+// Get previous block that added to the slice.
+func (bs BlockSlice) PreviousBlock() *Block {
+	l := len(bs)
+
+	if l == 0 {
+		return nil
+	} else {
+		return &bs[l-1]
+	}
 }
 
 // Test if two block slices are equal.
@@ -76,7 +82,7 @@ func (bs BlockSlice) MarshalBinary() ([]byte, error) {
 func (bs *BlockSlice) UnmarshalBinary(data []byte) error {
 	buf := bytes.NewBuffer(data)
 
-	for ; buf.Len() != 0; {
+	for buf.Len() != 0 {
 		var bh BlockHeader
 
 		err := bh.UnmarshalBinary(buf.Next(BlockHeaderBufferSize))
@@ -86,9 +92,9 @@ func (bs *BlockSlice) UnmarshalBinary(data []byte) error {
 
 		signature := buf.Next(SignatureBufferSize)
 
-		var trs TransactionsList
+		var trs TransactionSlice
 
-		for i := 0; i < int(bh.TransactionsLength); i ++ {
+		for i := 0; i < int(bh.TransactionsLength); i++ {
 			var t Transaction
 
 			err = t.Header.UnmarshalBinary(buf.Next(TransactionHeaderBufferSize))
@@ -112,10 +118,11 @@ func (bs *BlockSlice) UnmarshalBinary(data []byte) error {
 	return nil
 }
 
-// Generate new block.
-func NewBlock(prevBlockID []byte) Block {
-	header := BlockHeader{PrevBlockID: prevBlockID}
-	return Block{header, nil, []Transaction{}}
+// Calculate SHA256 sum of block header.
+func (b Block) Hash() []byte {
+	header, _ := b.Header.MarshalBinary()
+
+	return SHA256(header)
 }
 
 // Append new transaction to this block.

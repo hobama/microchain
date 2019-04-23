@@ -24,8 +24,9 @@ type Network struct {
 }
 
 type Peer struct {
-	*KeyPair // Public key and private Key
-	*Network // Network
+	*KeyPair    // Public key and private Key
+	*Network    // Network
+	*Blockchain // Blockchain
 }
 
 // TODO: func NewNode() Node {}
@@ -48,24 +49,19 @@ func (p *Peer) AddNode(n Node) bool {
 	return false
 }
 
-// Test if node n is online.
-func (p *Peer) Ping(n Node) bool {
-	return false
-}
-
 // Send message to specific node.
-func (p *Peer) Send(n Node, m *Message) (error, int) {
+func (p *Peer) Send(n Node, m *Message) (int, error) {
 	mBytes, err := m.MarshalBinary()
 	if err != nil {
-		return err, 0
+		return 0, err
 	}
 
 	bufLen, err := (*n.Conn).Write(mBytes)
 	if err != nil {
-		return err, 0
+		return 0, err
 	}
 
-	return nil, bufLen
+	return bufLen, nil
 }
 
 // Receive Message from connected nodes.
@@ -89,7 +85,20 @@ func (p *Peer) Recv(n Node) (Message, error) {
 	return *m, nil
 }
 
+// Ping node.
+func (p *Peer) Ping(n Node) bool {
+	// TODO: Implement ping message.
+	return true
+}
+
 // Broadcast messages to nodes.
-func (p *Peer) BroadcastMessage(m *Message) error {
-	return nil
+func (p *Peer) BroadcastMessage(m *Message, errch chan error) {
+	for _, n := range p.Nodes {
+		// We cannot interupt this process, if there is a error, we should
+		// emit this error in error channel.
+		_, err := p.Send(*n, m)
+		if err != nil {
+			errch <- err
+		}
+	}
 }

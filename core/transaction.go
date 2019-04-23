@@ -15,12 +15,7 @@ const (
 	PublicKeyHashBufferSize     = 32
 	TXOutputBufferSize          = 48
 	TXOutputLenBufferSize       = 8
-	TransactionHeaderBufferSize =
-		TransactionIDBufferSize * 2 +
-		TimestampBufferSize         +
-		PublicKeyBufferSize     * 2 +
-		SignatureBufferSize     * 2 +
-		MetaDataLenBufferSize
+	TransactionHeaderBufferSize = TransactionIDBufferSize*2 + TimestampBufferSize + PublicKeyBufferSize*2 + SignatureBufferSize*2 + MetaDataLenBufferSize
 )
 
 // The output field contains the following 3 entries:
@@ -45,9 +40,9 @@ type TransactionHeader struct {
 }
 
 type Transaction struct {
-	Header  TransactionHeader // Header
-	Meta    []byte            // Meta data field
-	Output  TXOutput          // TXOutput
+	Header TransactionHeader // Header
+	Meta   []byte            // Meta data field
+	Output TXOutput          // TXOutput
 }
 
 // We use requesterID, requesteeID, timestamp to identify a transaction in blocks.
@@ -272,16 +267,16 @@ func (t *Transaction) Hash() []byte {
 }
 
 // We have 2 ways to represent transactions in a block
-// (1) TransactionsList: Consume lower memory, but low performace
+// (1) TransactionSlice: Consume lower memory, but low performace
 // (2) TransactionsMap: High performance, but consume more memory
-type TransactionsList []Transaction
+type TransactionSlice []Transaction
 type TransactionsMap struct {
 	mapping map[string]Transaction
 	order   []string
 }
 
 // Test if given tansaction is contained in the list.
-func (list TransactionsList) Contains(tr Transaction) (bool, int) {
+func (list TransactionSlice) Contains(tr Transaction) (bool, int) {
 	for i, t := range list {
 		if bytes.Equal(tr.Header.TransactionID, t.Header.TransactionID) {
 			return true, i
@@ -292,7 +287,7 @@ func (list TransactionsList) Contains(tr Transaction) (bool, int) {
 }
 
 // Test if transaction with given id is contained in the list.
-func (list TransactionsList) ContainsByID(id []byte) (bool, int) {
+func (list TransactionSlice) ContainsByID(id []byte) (bool, int) {
 	for i, t := range list {
 		if bytes.Equal(id, t.Header.TransactionID) {
 			return true, i
@@ -303,12 +298,12 @@ func (list TransactionsList) ContainsByID(id []byte) (bool, int) {
 }
 
 // Append new transaction to transaction list.
-func (list TransactionsList) Append(tr Transaction) TransactionsList {
+func (list TransactionSlice) Append(tr Transaction) TransactionSlice {
 	return append(list, tr)
 }
 
 // Insert new transaction to transaction list.
-func (list TransactionsList) Insert(tr Transaction) TransactionsList {
+func (list TransactionSlice) Insert(tr Transaction) TransactionSlice {
 	for i, t := range list {
 		if t.Header.Timestamp >= tr.Header.Timestamp {
 			return append(append(list[:i], tr), list[i:]...)
@@ -319,7 +314,7 @@ func (list TransactionsList) Insert(tr Transaction) TransactionsList {
 }
 
 // Serialize transactions into bytes.
-func (list TransactionsList) MarshalBinary() ([]byte, error) {
+func (list TransactionSlice) MarshalBinary() ([]byte, error) {
 	buf := new(bytes.Buffer)
 
 	for _, t := range list {
@@ -334,7 +329,7 @@ func (list TransactionsList) MarshalBinary() ([]byte, error) {
 }
 
 // Read tansaction header from bytes.
-func (list *TransactionsList) UnmarshalBinary(data []byte) error {
+func (list *TransactionSlice) UnmarshalBinary(data []byte) error {
 	buf := bytes.NewBuffer(data)
 
 	for buf.Len() != 0 {
@@ -352,7 +347,7 @@ func (list *TransactionsList) UnmarshalBinary(data []byte) error {
 }
 
 // Test if two transaction lists are equal.
-func (list TransactionsList) EqualWith(temp TransactionsList) bool {
+func (list TransactionSlice) EqualWith(temp TransactionSlice) bool {
 	if len(list) != len(temp) {
 		return false
 	}
@@ -366,7 +361,7 @@ func (list TransactionsList) EqualWith(temp TransactionsList) bool {
 	return true
 }
 
-func VerifyTransaction(tr Transaction, trs TransactionsList) bool {
+func VerifyTransaction(tr Transaction, trs TransactionSlice) bool {
 	// Find previous transaction.
 	ok, index := trs.ContainsByID(tr.Header.PrevTransactionID)
 
@@ -393,9 +388,34 @@ func VerifyTransaction(tr Transaction, trs TransactionsList) bool {
 	// Output verification
 	dis_acc := Distance(tr.Output.Accepted, tr_1.Output.Accepted)
 	dis_rej := Distance(tr.Output.Rejected, tr_1.Output.Rejected)
-	if dis_acc + dis_rej > 1 {
+	if dis_acc+dis_rej > 1 {
 		return false
 	}
 
 	return true
+}
+
+// Diff on transactions.
+func DiffTransactions(tl1, tl2 TransactionSlice) TransactionSlice {
+	var diff TransactionSlice
+	lastj := 0
+
+	for _, t1 := range tl1 {
+		found := false
+
+		for j := lastj; j < len(tl2); j++ {
+			// We assume tl1 and tl2 are sorted, so we could diff them in O(n).
+			if bytes.Equal(StripBytes(t1.Header.TransactionID, 0), StripBytes(tl2[j].Header.TransactionID, 0)) {
+				found = true
+				lastj = j
+				break
+			}
+		}
+
+		if !found {
+			diff = append(diff, t1)
+		}
+	}
+
+	return diff
 }

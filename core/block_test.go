@@ -18,7 +18,7 @@ func GenRandomBlockHeader() BlockHeader {
 func GenRandomBlock() Block {
 	bh := GenRandomBlockHeader()
 
-	var trs TransactionsList
+	var trs TransactionSlice
 	for i := 0; i < int(bh.TransactionsLength); i++ {
 		trs = trs.Insert(GenRandomTransaction())
 	}
@@ -89,12 +89,12 @@ func TestBlockMarshal(t *testing.T) {
 func TestBlockExist(t *testing.T) {
 	var bs BlockSlice
 
-	for i := 0; i < 5; i ++ {
+	for i := 0; i < 5; i++ {
 		b := GenRandomBlock()
 		bs = append(bs, b)
 	}
 
-	for i := 0; i < 5; i ++ {
+	for i := 0; i < 5; i++ {
 		b := bs[i]
 
 		ok, index := bs.Contains(b)
@@ -112,7 +112,7 @@ func TestBlockExist(t *testing.T) {
 func TestBlockSliceEQ(t *testing.T) {
 	var bs1 BlockSlice
 
-	for i := 0; i < 5; i ++ {
+	for i := 0; i < 5; i++ {
 		bs1 = append(bs1, GenRandomBlock())
 	}
 
@@ -126,7 +126,7 @@ func TestBlockSliceEQ(t *testing.T) {
 func TestBlockSliceMarshal(t *testing.T) {
 	var bs1 BlockSlice
 
-	for i := 0; i < 5; i ++ {
+	for i := 0; i < 5; i++ {
 		bs1 = append(bs1, GenRandomBlock())
 	}
 

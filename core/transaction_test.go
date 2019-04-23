@@ -59,8 +59,8 @@ func TestTransactionEQ(t *testing.T) {
 	}
 }
 
-func TestTransactionsListEQ(t *testing.T) {
-	var trs TransactionsList
+func TestTransactionSliceEQ(t *testing.T) {
+	var trs TransactionSlice
 
 	for i := 0; i < 10; i++ {
 		trs.Append(GenRandomTransaction())
@@ -134,8 +134,8 @@ func TestTransactionMarshal(t *testing.T) {
 	}
 }
 
-func TestTransactionsListMarshal(t *testing.T) {
-	var trs TransactionsList
+func TestTransactionSliceMarshal(t *testing.T) {
+	var trs TransactionSlice
 
 	for i := 0; i < 10; i++ {
 		trs.Append(GenRandomTransaction())
@@ -146,7 +146,7 @@ func TestTransactionsListMarshal(t *testing.T) {
 		panic(err)
 	}
 
-	trs2 := new(TransactionsList)
+	trs2 := new(TransactionSlice)
 
 	err = trs2.UnmarshalBinary(trsBytes)
 	if err != nil {
@@ -154,6 +154,30 @@ func TestTransactionsListMarshal(t *testing.T) {
 	}
 
 	if !trs2.EqualWith(trs) {
-		panic(errors.New("(*TransactionsList) UnmarshalBinary() testing failed."))
+		panic(errors.New("(*TransactionSlice) UnmarshalBinary() testing failed."))
+	}
+}
+
+// Test diff two transaction slice.
+func TestDiffTransactionSlice(t *testing.T) {
+	var ts1, ts2 TransactionSlice
+
+	// Insert even indexed item to ts2.
+	for i := 0; i < 10; i++ {
+		tr := GenRandomTransaction()
+		ts1 = append(ts1, tr)
+		if i%2 == 0 {
+			ts2 = append(ts2, tr)
+		}
+	}
+
+	// Odd indexed items are passed to ts3.
+	ts3 := DiffTransactions(ts1, ts2)
+
+	// Test if odd indexed items are stored in ts3.
+	for i, tr := range ts3 {
+		if !tr.EqualWith(ts1[2*i+1]) {
+			panic(errors.New("DiffTransactions() testing failed."))
+		}
 	}
 }

@@ -1,7 +1,6 @@
 package core
 
 import (
-	_ "bytes"
 	"errors"
 	"net"
 	"testing"
@@ -11,7 +10,7 @@ import (
 func GeneratePeer(addr string) Peer {
 	kp, _ := NewECDSAKeyPair()
 
-	p := Peer{kp, new(Network)}
+	p := Peer{kp, new(Network), nil}
 
 	p.Network.Address = addr
 	p.Network.Nodes = make(map[string]*Node)
@@ -52,7 +51,7 @@ func TestAddNode(t *testing.T) {
 	}
 }
 
-// Test sending messages.
+// Test sending/receiving messages.
 func TestSendMessage(t *testing.T) {
 	s := GeneratePeer("localhost:3000")
 	c := GeneratePeer("localhost:3001")
@@ -98,8 +97,8 @@ func TestSendMessage(t *testing.T) {
 		}
 	}
 
-	go testSend(c, s.AsNode())
-	go testSend(s, c.AsNode())
-
-	// Test Ping()
+	for i := 0; i < 5; i++ {
+		go testSend(c, s.AsNode())
+		go testSend(s, c.AsNode())
+	}
 }
