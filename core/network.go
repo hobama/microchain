@@ -7,20 +7,20 @@ import (
 
 type NodesMap map[string]*Node
 type Node struct {
-	Conn      *net.Conn // Use generic Conn, so that we could use various conn type
-	Lastseen  int       // The seconds since last time seen this node
-	PublicKey string    // Public key of this node
-	Address   string    // TCP-4 Address
+	Conn      *net.TCPConn // Use generic Conn, so that we could use various conn type
+	Lastseen  int          // The seconds since last time seen this node
+	PublicKey string       // Public key of this node
+	Address   string       // TCP-4 Address
 }
 
 type Network struct {
-	Nodes              NodesMap     // Contacts
-	ConnectionsQueue   chan string  // Connections
-	Listener           net.Listener // Listener
-	Address            string       // TCP-4 address
-	ConnectionCallBack chan *Node   // Connections callback
-	BroadcastQueue     chan Message // Broadcast queue
-	IncommingMessages  chan Message // Incomming messages
+	Nodes              NodesMap         // Contacts
+	ConnectionsQueue   chan string      // Connections
+	Listener           *net.TCPListener // Listener
+	Address            string           // TCP-4 address
+	ConnectionCallBack chan *Node       // Connections callback
+	BroadcastQueue     chan Message     // Broadcast queue
+	IncommingMessages  chan Message     // Incomming messages
 }
 
 type Peer struct {
@@ -89,6 +89,39 @@ func (p *Peer) Recv(n Node) (Message, error) {
 func (p *Peer) Ping(n Node) bool {
 	// TODO: Implement ping message.
 	return true
+}
+
+// Listen.
+func (p *Peer) Listen(address string, errch chan error) (chan Node, error) {
+	cb := make(chan Node)
+
+	addr, err := net.ResolveTCPAddr("tcp", address)
+	if err != nil {
+		return nil, err
+	}
+
+	p.Network.Listener, err = net.ListenTCP("tcp4", addr)
+	if err != nil {
+		return nil, err
+	}
+
+	go func(l *net.TCPListener) {
+		for {
+			// conn, err := l.Accept()
+			// if err != nil {
+			// 	if err != io.EOF {
+			// 		errch <- err
+			// 	}
+			// }
+
+			// cb <- Node{conn, time.Now().Unix(), nil, nil}
+			//	PublicKey string    // Public key of this node
+			//	Address   string    // TCP-4 Address
+			//}
+		}
+	}(p.Network.Listener)
+
+	return cb, nil
 }
 
 // Broadcast messages to nodes.

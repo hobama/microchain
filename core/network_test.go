@@ -24,8 +24,9 @@ func GenRandomMessage() Message {
 }
 
 // Create simple echo server.
-func SimpleEchoServer(listener *net.Listener, addr string, handle func(net.Conn)) {
-	*listener, _ = net.Listen("tcp", addr)
+func SimpleEchoServer(listener *net.TCPListener, address string, handle func(net.Conn)) {
+	addr, _ := net.ResolveTCPAddr("tcp", address)
+	listener, _ = net.ListenTCP("tcp4", addr)
 
 	for {
 		conn, _ := (*listener).Accept()
@@ -40,7 +41,7 @@ func TestAddNode(t *testing.T) {
 	p := GeneratePeer("localhost:3000")
 
 	kp1, _ := NewECDSAKeyPair()
-	n := Node{new(net.Conn), 0, string(kp1.Public), p.Network.Address}
+	n := Node{new(net.TCPConn), 0, string(kp1.Public), p.Network.Address}
 
 	if !p.AddNode(n) {
 		panic(errors.New("(*Peer) AddNode() testing failed"))
@@ -70,18 +71,19 @@ func TestSendMessage(t *testing.T) {
 	}
 
 	// Run nodes: client & server.
-	go SimpleEchoServer(&s.Network.Listener, s.Network.Address, handleFunc)
-	go SimpleEchoServer(&c.Network.Listener, c.Network.Address, handleFunc)
+	go SimpleEchoServer(s.Network.Listener, s.Network.Address, handleFunc)
+	go SimpleEchoServer(c.Network.Listener, c.Network.Address, handleFunc)
 
 	// Test Send()/Recv()
 	testSend := func(p Peer, n Node) {
-		conn, err := net.Dial("tcp", n.Address)
+		addr, _ := net.ResolveTCPAddr("tcp", n.Address)
+		conn, err := net.DialTCP("tcp", nil, addr)
 		if err != nil {
 			panic(errors.New("Cannot dial " + n.Address + " via TCP."))
 		}
 		defer conn.Close()
 
-		p.Nodes[n.PublicKey].Conn = &conn
+		p.Nodes[n.PublicKey].Conn = conn
 
 		randomMessage := GenRandomMessage()
 
