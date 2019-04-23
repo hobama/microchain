@@ -51,7 +51,7 @@ func (p *Peer) AddNode(n Node) bool {
 }
 
 // Send message to specific node.
-func (p *Peer) Send(n Node, m *Message) (int, error) {
+func (p *Peer) Send(n Node, m Message) (int, error) {
 	mBytes, err := m.MarshalBinary()
 	if err != nil {
 		return 0, err
@@ -115,7 +115,7 @@ func (p *Peer) Listen(address string, errch chan error) (chan Node, error) {
 				}
 			}
 
-			cb <- Node{conn, int(time.Now().Unix()), "", ""}
+			cb <- Node{conn, int(time.Now().Unix()), "", conn.RemoteAddr().String()}
 		}
 	}(p.Network.Listener)
 
@@ -125,7 +125,7 @@ func (p *Peer) Listen(address string, errch chan error) (chan Node, error) {
 // Parse tcp message.
 
 // Broadcast messages to nodes.
-func (p *Peer) BroadcastMessage(m *Message, errch chan error) {
+func (p *Peer) BroadcastMessage(m Message, errch chan error) {
 	for _, n := range p.Nodes {
 		// We cannot interupt this process, if there is a error, we should
 		// emit this error in error channel.
