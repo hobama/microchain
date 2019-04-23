@@ -3,11 +3,12 @@ package core
 import (
 	"io"
 	"net"
+	"time"
 )
 
 type NodesMap map[string]*Node
 type Node struct {
-	Conn      *net.TCPConn // Use generic Conn, so that we could use various conn type
+	Conn      *net.TCPConn // Should use generic Conn, so that we could use various conn type
 	Lastseen  int          // The seconds since last time seen this node
 	PublicKey string       // Public key of this node
 	Address   string       // TCP-4 Address
@@ -107,22 +108,21 @@ func (p *Peer) Listen(address string, errch chan error) (chan Node, error) {
 
 	go func(l *net.TCPListener) {
 		for {
-			// conn, err := l.Accept()
-			// if err != nil {
-			// 	if err != io.EOF {
-			// 		errch <- err
-			// 	}
-			// }
+			conn, err := l.AcceptTCP()
+			if err != nil {
+				if err != io.EOF {
+					errch <- err
+				}
+			}
 
-			// cb <- Node{conn, time.Now().Unix(), nil, nil}
-			//	PublicKey string    // Public key of this node
-			//	Address   string    // TCP-4 Address
-			//}
+			cb <- Node{conn, int(time.Now().Unix()), "", ""}
 		}
 	}(p.Network.Listener)
 
 	return cb, nil
 }
+
+// Parse tcp message.
 
 // Broadcast messages to nodes.
 func (p *Peer) BroadcastMessage(m *Message, errch chan error) {
