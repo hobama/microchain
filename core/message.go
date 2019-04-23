@@ -10,7 +10,7 @@ const (
 
 	// Below are message types definitions
 	MSG_NULL byte = 0x00
-	MSG_PING byte = 0xf0
+	MSG_PING byte = 0xff
 	// ...
 )
 
