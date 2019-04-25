@@ -43,6 +43,9 @@ func SimpleEchoServer(listener *net.TCPListener, address string, handle func(net
 	}
 }
 
+// A function that always returns true.
+func alwaysTrue(n Node) bool { return true }
+
 // Test add node to network.
 func TestAddNode(t *testing.T) {
 	p := GeneratePeer("localhost:3000")
@@ -50,7 +53,7 @@ func TestAddNode(t *testing.T) {
 	kp1, _ := NewECDSAKeyPair()
 	n := Node{new(net.TCPConn), 0, string(kp1.Public), p.Network.Address}
 
-	if !p.AddNode(n) {
+	if !p.AddNode(n, alwaysTrue) {
 		panic(errors.New("(*Peer) AddNode() testing failed"))
 	}
 
@@ -66,12 +69,12 @@ func TestSendMessage(t *testing.T) {
 	n2 := GeneratePeer("localhost:3002")
 
 	// Add nodes.
-	n0.AddNode(n1.AsNode())
-	n0.AddNode(n2.AsNode())
-	n1.AddNode(n0.AsNode())
-	n1.AddNode(n2.AsNode())
-	n2.AddNode(n0.AsNode())
-	n2.AddNode(n1.AsNode())
+	n0.AddNode(n1.AsNode(), alwaysTrue)
+	n0.AddNode(n2.AsNode(), alwaysTrue)
+	n1.AddNode(n0.AsNode(), alwaysTrue)
+	n1.AddNode(n2.AsNode(), alwaysTrue)
+	n2.AddNode(n0.AsNode(), alwaysTrue)
+	n2.AddNode(n1.AsNode(), alwaysTrue)
 
 	handleFunc := func(conn net.Conn) {
 		buf := make([]byte, 1024)
@@ -171,12 +174,12 @@ func TestBroadcast(t *testing.T) {
 	n2 := GeneratePeer("localhost:3000")
 
 	// Add nodes.
-	n0.AddNode(n1.AsNode())
-	n0.AddNode(n2.AsNode())
-	n1.AddNode(n0.AsNode())
-	n1.AddNode(n2.AsNode())
-	n2.AddNode(n0.AsNode())
-	n2.AddNode(n1.AsNode())
+	n0.AddNode(n1.AsNode(), alwaysTrue)
+	n0.AddNode(n2.AsNode(), alwaysTrue)
+	n1.AddNode(n0.AsNode(), alwaysTrue)
+	n1.AddNode(n2.AsNode(), alwaysTrue)
+	n2.AddNode(n0.AsNode(), alwaysTrue)
+	n2.AddNode(n1.AsNode(), alwaysTrue)
 
 	go SimpleNodeProcess(n0)
 	go SimpleNodeProcess(n1)

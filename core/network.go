@@ -39,7 +39,11 @@ func (p Peer) AsNode() Node {
 }
 
 // Add node to peer's network.
-func (p *Peer) AddNode(n Node) bool {
+func (p *Peer) AddNode(n Node, checkNode func(Node) bool) bool {
+	if !checkNode(n) {
+		return false
+	}
+
 	pub := n.PublicKey
 
 	if pub != string(p.KeyPair.Public) && p.Network.Nodes[pub] == nil {
@@ -93,8 +97,8 @@ func (p *Peer) Ping(n Node) bool {
 }
 
 // Listen.
-func (p *Peer) Listen(address string, errch chan error) (chan Node, error) {
-	cb := make(chan Node)
+func (p *Peer) Listen(address string, errch chan error) (chan *Node, error) {
+	cb := make(chan *Node)
 
 	addr, err := net.ResolveTCPAddr("tcp", address)
 	if err != nil {
@@ -115,14 +119,12 @@ func (p *Peer) Listen(address string, errch chan error) (chan Node, error) {
 				}
 			}
 
-			cb <- Node{conn, int(time.Now().Unix()), "", conn.RemoteAddr().String()}
+			cb <- &Node{conn, int(time.Now().Unix()), "", conn.RemoteAddr().String()}
 		}
 	}(p.Network.Listener)
 
 	return cb, nil
 }
-
-// Parse tcp message.
 
 // Broadcast messages to nodes.
 func (p *Peer) BroadcastMessage(m Message, errch chan error) {
@@ -134,4 +136,36 @@ func (p *Peer) BroadcastMessage(m Message, errch chan error) {
 			errch <- err
 		}
 	}
+}
+
+// Run.
+func (p *Peer) Run(
+	listenCB func(Node, chan error), // Listen callback
+	ConnectionCB func(Node, chan error), // Connect callback
+	broadcastCB func(Message, chan error), // Broadcast callback
+	errch chan error) error {
+
+	listen, err := p.Listen(p.Network.Address, errch)
+	if err != nil {
+		return err
+	}
+
+	for {
+		select {
+		case n, ok := <-listen:
+			if ok {
+				listenCB(*n, errch)
+			}
+		case n, ok := <-p.Network.ConnectionCallBack:
+			if ok {
+				ConnectionCB(*n, errch)
+			}
+		case m, ok := <-p.Network.BroadcastQueue:
+			if ok {
+				broadcastCB(m, errch)
+			}
+		}
+	}
+
+	return nil
 }
