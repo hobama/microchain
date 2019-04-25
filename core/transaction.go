@@ -54,7 +54,7 @@ func (txo TXOutput) MarshalJson() ([]byte, error) {
 }
 
 // Read TXOutput from Json.
-func (txo TXOutput) UnmarshalJson(data []byte) error {
+func (txo *TXOutput) UnmarshalJson(data []byte) error {
 	return json.Unmarshal(data, &txo)
 }
 
@@ -91,6 +91,16 @@ func (h TransactionHeader) EqualWith(temp TransactionHeader) bool {
 	return true
 }
 
+// Serialize transaction header into Json.
+func (th TransactionHeader) MarshalJson() ([]byte, error) {
+	return json.Marshal(th)
+}
+
+// Read transaction header from Json.
+func (th *TransactionHeader) UnmarshalJson(data []byte) error {
+	return json.Unmarshal(data, &th)
+}
+
 // Test if two transactions are equal.
 func (t Transaction) EqualWith(temp Transaction) bool {
 	if !t.Header.EqualWith(temp.Header) {
@@ -107,6 +117,8 @@ func (t Transaction) EqualWith(temp Transaction) bool {
 
 	return true
 }
+
+// TODO: Serialize transaction into Json.
 
 // We have 2 ways to represent transactions in a block
 // (1) TransactionSlice: Consume lower memory, but low performace
