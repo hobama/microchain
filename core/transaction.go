@@ -118,7 +118,15 @@ func (t Transaction) EqualWith(temp Transaction) bool {
 	return true
 }
 
-// TODO: Serialize transaction into Json.
+// Serialize transaction into Json.
+func (tr Transaction) MarshalJson() ([]byte, error) {
+	return json.Marshal(tr)
+}
+
+// Read transaction from Json.
+func (tr *Transaction) UnmarshalJson(data []byte) error {
+	return json.Unmarshal(data, &tr)
+}
 
 // We have 2 ways to represent transactions in a block
 // (1) TransactionSlice: Consume lower memory, but low performace
@@ -129,9 +137,9 @@ type TransactionsMap struct {
 	order   []string
 }
 
-// Test if given tansaction is contained in the list.
-func (list TransactionSlice) Contains(tr Transaction) (bool, int) {
-	for i, t := range list {
+// Test if given tansaction is contained in the trs.
+func (trs TransactionSlice) Contains(tr Transaction) (bool, int) {
+	for i, t := range trs {
 		if bytes.Equal(tr.Header.TransactionID, t.Header.TransactionID) {
 			return true, i
 		}
@@ -140,9 +148,9 @@ func (list TransactionSlice) Contains(tr Transaction) (bool, int) {
 	return false, 0
 }
 
-// Test if transaction with given id is contained in the list.
-func (list TransactionSlice) ContainsByID(id []byte) (bool, int) {
-	for i, t := range list {
+// Test if transaction with given id is contained in the trs.
+func (trs TransactionSlice) ContainsByID(id []byte) (bool, int) {
+	for i, t := range trs {
 		if bytes.Equal(id, t.Header.TransactionID) {
 			return true, i
 		}
@@ -151,29 +159,29 @@ func (list TransactionSlice) ContainsByID(id []byte) (bool, int) {
 	return false, 0
 }
 
-// Append new transaction to transaction list.
-func (list TransactionSlice) Append(tr Transaction) TransactionSlice {
-	return append(list, tr)
+// Append new transaction to transaction trs.
+func (trs TransactionSlice) Append(tr Transaction) TransactionSlice {
+	return append(trs, tr)
 }
 
-// Insert new transaction to transaction list.
-func (list TransactionSlice) Insert(tr Transaction) TransactionSlice {
-	for i, t := range list {
+// Insert new transaction to transaction trs.
+func (trs TransactionSlice) Insert(tr Transaction) TransactionSlice {
+	for i, t := range trs {
 		if t.Header.Timestamp >= tr.Header.Timestamp {
-			return append(append(list[:i], tr), list[i:]...)
+			return append(append(trs[:i], tr), trs[i:]...)
 		}
 	}
 
-	return list.Append(tr)
+	return trs.Append(tr)
 }
 
-// Test if two transaction lists are equal.
-func (list TransactionSlice) EqualWith(temp TransactionSlice) bool {
-	if len(list) != len(temp) {
+// Test if two transaction trss are equal.
+func (trs TransactionSlice) EqualWith(temp TransactionSlice) bool {
+	if len(trs) != len(temp) {
 		return false
 	}
 
-	for i, t := range list {
+	for i, t := range trs {
 		if !t.EqualWith(temp[i]) {
 			return false
 		}
@@ -181,6 +189,13 @@ func (list TransactionSlice) EqualWith(temp TransactionSlice) bool {
 
 	return true
 }
+
+// Serialize transaction slice into Json.
+func (trs TransactionSlice) MarshalJson() ([]byte, error) {
+	return json.Marshal(trs)
+}
+
+// TODO: UnmarshalJson()
 
 // Diff on transactions.
 func DiffTransactions(tl1, tl2 TransactionSlice) TransactionSlice {

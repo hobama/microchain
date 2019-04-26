@@ -26,7 +26,27 @@ func GenRandomTransactionHeader() TransactionHeader {
 		GenRandomBytes(32)} // RequesteeSignature
 }
 
-// TODO: Generate random Transaction.
+// Generate random Transaction.
+func GenRandomTransaction() Transaction {
+	th := GenRandomTransactionHeader()
+	txo := GenRandomTXOutput()
+
+	return Transaction{
+		th,                 // TransactionHeader
+		GenRandomBytes(10), // Meta
+		txo}                // TXOutput
+}
+
+// Generate random TransactionSlice.
+func GenRandomTransactionSlice(n int) TransactionSlice {
+	var trs TransactionSlice
+
+	for i := 0; i < n; i++ {
+		trs.Append(GenRandomTransaction())
+	}
+
+	return trs
+}
 
 // Test TXOutput marshal function.
 func TestTXOutputMarshalJson(t *testing.T) {
@@ -67,5 +87,26 @@ func TestTransactionHeaderMarshalJson(t *testing.T) {
 
 	if !th1.EqualWith(th2) {
 		panic(errors.New("(TransactionHeader) MarshalJson()/UnmarshalJson() testing failed."))
+	}
+}
+
+// Test Transaction marshal function.
+func TestTransactionMarshalJson(t *testing.T) {
+	tr1 := GenRandomTransaction()
+
+	tr1json, err := tr1.MarshalJson()
+	if err != nil {
+		panic(errors.New("(Transaction) MarshalJson() testing failed."))
+	}
+
+	var tr2 Transaction
+
+	err = tr2.UnmarshalJson(tr1json)
+	if err != nil {
+		panic(errors.New("(*Transaction) UnmarshalJson() testing failed."))
+	}
+
+	if !tr1.EqualWith(tr2) {
+		panic(errors.New("(Transaction) MarshalJson()/UnmarshalJson() testing failed."))
 	}
 }
