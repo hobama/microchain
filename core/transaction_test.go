@@ -42,7 +42,7 @@ func GenRandomTransactionSlice(n int) TransactionSlice {
 	var trs TransactionSlice
 
 	for i := 0; i < n; i++ {
-		trs.Append(GenRandomTransaction())
+		trs = trs.Append(GenRandomTransaction())
 	}
 
 	return trs
@@ -108,5 +108,26 @@ func TestTransactionMarshalJson(t *testing.T) {
 
 	if !tr1.EqualWith(tr2) {
 		panic(errors.New("(Transaction) MarshalJson()/UnmarshalJson() testing failed."))
+	}
+}
+
+// Test TransactionSlice marshal function.
+func TestTransactionSliceMarshalJson(t *testing.T) {
+	trs1 := GenRandomTransactionSlice(10)
+
+	trs1json, err := trs1.MarshalJson()
+	if err != nil {
+		panic(errors.New("(TransactionSlice) MarshalJson() testing failed."))
+	}
+
+	var trs2 TransactionSlice
+
+	err = trs2.UnmarshalJson(trs1json)
+	if err != nil {
+		panic(errors.New("(*TransactionSlice) UnmarshalJson() testing failed."))
+	}
+
+	if !trs1.EqualWith(trs2) {
+		panic(errors.New("(TransactionSlice) MarshalJson()/UnmarshalJson() testing failed."))
 	}
 }

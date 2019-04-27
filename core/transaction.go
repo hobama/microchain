@@ -128,14 +128,10 @@ func (tr *Transaction) UnmarshalJson(data []byte) error {
 	return json.Unmarshal(data, &tr)
 }
 
-// We have 2 ways to represent transactions in a block
+// TODO: We have 2 ways to represent transactions in a block
 // (1) TransactionSlice: Consume lower memory, but low performace
 // (2) TransactionsMap: High performance, but consume more memory
 type TransactionSlice []Transaction
-type TransactionsMap struct {
-	mapping map[string]Transaction
-	order   []string
-}
 
 // Test if given tansaction is contained in the trs.
 func (trs TransactionSlice) Contains(tr Transaction) (bool, int) {
@@ -195,7 +191,10 @@ func (trs TransactionSlice) MarshalJson() ([]byte, error) {
 	return json.Marshal(trs)
 }
 
-// TODO: UnmarshalJson()
+// Read transaction slice from Json.
+func (trs *TransactionSlice) UnmarshalJson(data []byte) error {
+	return json.Unmarshal(data, &trs)
+}
 
 // Diff on transactions.
 func DiffTransactions(tl1, tl2 TransactionSlice) TransactionSlice {

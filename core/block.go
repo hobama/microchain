@@ -46,28 +46,6 @@ func (bh *BlockHeader) UnmarshalJson(data []byte) error {
 	return json.Unmarshal(data, &bh)
 }
 
-// Test if one block is existed in blockslice.
-func (bs BlockSlice) Contains(b Block) (bool, int) {
-	for i, bb := range bs {
-		if b.EqualWith(bb) {
-			return true, i
-		}
-	}
-
-	return false, 0
-}
-
-// Test if two block slices are equal.
-func (bs BlockSlice) EqualWith(temp BlockSlice) bool {
-	for i, b := range bs {
-		if !b.EqualWith(temp[i]) {
-			return false
-		}
-	}
-
-	return true
-}
-
 // Append new transaction to this block.
 func (b *Block) AppendNewTransaction(t Transaction) {
 	ts := b.Transactions.Append(t)
@@ -100,4 +78,41 @@ func (b Block) EqualWith(temp Block) bool {
 // Serialize block into bytes.
 func (b Block) MarshalJson() ([]byte, error) {
 	return json.Marshal(b)
+}
+
+// Read block from Json.
+func (b *Block) UnmarshalJson(data []byte) error {
+	return json.Unmarshal(data, &b)
+}
+
+// Test if one block is existed in blockslice.
+func (bs BlockSlice) Contains(b Block) (bool, int) {
+	for i, bb := range bs {
+		if b.EqualWith(bb) {
+			return true, i
+		}
+	}
+
+	return false, 0
+}
+
+// Test if two block slices are equal.
+func (bs BlockSlice) EqualWith(temp BlockSlice) bool {
+	for i, b := range bs {
+		if !b.EqualWith(temp[i]) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Serialize block slice into Json.
+func (bs BlockSlice) MarshalJson() ([]byte, error) {
+	return json.Marshal(bs)
+}
+
+// Read block slice from Json.
+func (bs *BlockSlice) UnmarshalJson(data []byte) error {
+	return json.Unmarshal(data, &bs)
 }
