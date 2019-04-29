@@ -2,23 +2,27 @@ package core
 
 import (
 	"bytes"
-	"errors"
+	"encoding/json"
 )
 
 const (
 	MessageOptionsBufferSize int = 4
 
 	// Below are message types definitions
-	MSG_NULL byte = 0x00
-	MSG_PING byte = 0xff
-	// ...
+	// TODO:
 )
 
 type Message struct {
-	Type byte   // Message type
-	Data []byte // Raw data
+	Type     byte   `json:"type"` // Message type
+	Token    []byte `json:token`  // UUID of message
+	SourceID []byte `json:"from"` // Source id
+	Data     []byte `json:"data"` // Raw data
+}
 
-	Reply chan Message // Reply channel
+// Generate new message.
+func NewMessage() (Message, []byte) {
+	token := GenRandomBytes(32)
+	return Message{Token: token}, token
 }
 
 // Test if two messages are equal.
@@ -27,34 +31,27 @@ func (m Message) EqualWith(temp Message) bool {
 		return false
 	}
 
-	if !bytes.Equal(StripBytes(m.Data, 0), StripBytes(temp.Data, 0)) {
+	if !bytes.Equal(m.Token, temp.Token) {
+		return false
+	}
+
+	if !bytes.Equal(m.SourceID, temp.SourceID) {
+		return false
+	}
+
+	if !bytes.Equal(m.Data, temp.Data) {
 		return false
 	}
 
 	return true
 }
 
-// Serialize message into bytes.
-func (m Message) MarshalBinary() ([]byte, error) {
-	buf := new(bytes.Buffer)
-
-	buf.Write([]byte{m.Type})
-	buf.Write(m.Data)
-
-	return buf.Bytes(), nil
+// Serialize message into Json.
+func (m Message) MarshalJson() ([]byte, error) {
+	return json.Marshal(m)
 }
 
-// Read message from bytes.
-func (m *Message) UnmarshalBinary(data []byte) error {
-
-	if len(data) <= 1 {
-		return errors.New("Invalid Message.")
-	}
-
-	buf := bytes.NewBuffer(data)
-
-	m.Type = buf.Next(1)[0]
-	m.Data = buf.Bytes()
-
-	return nil
+// Read message from Json.
+func (m *Message) UnmarshalJson(data []byte) error {
+	return json.Unmarshal(data, &m)
 }

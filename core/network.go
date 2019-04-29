@@ -1,33 +1,19 @@
 package core
 
-import ()
+import (
+	"net"
+)
 
-type NodesMap map[string]*Node
+type RemoteNode struct {
+	PublicKey  []byte        // Public key
+	Address    *net.TCPAddr  // Address
+	lastseen   int           // The unix time of seeing this node last time
+	verifiedBy []*RemoteNode // Nodes that verify this node
+}
+
 type Node struct {
-	/*
-		In this project, I would like to use HTTP protocol, rather than TCP.
-		Conn      *net.TCPConn  // Should use generic Conn, so that we could use various conn type
-	*/
-	Lastseen  int    // The seconds since last time seen this node
-	PublicKey string // Public key of this node
-	Address   string // TCP-4 Address
-}
-
-type Network struct {
-	Nodes            NodesMap    // Contacts
-	ConnectionsQueue chan string // Connections
-	/*
-		In this project, I would like to use HTTP protocol, rather than TCP.
-		Listener          *net.TCPListener // Listener
-	*/
-	Address           string       // Address
-	ConnectionPool    chan *Node   // Connections callback
-	BroadcastQueue    chan Message // Broadcast queue
-	IncommingMessages chan Message // Incomming messages
-}
-
-type Peer struct {
-	*KeyPair    // Public key and private Key
-	*Network    // Network
-	*Blockchain // Blockchain
+	PublicKey     []byte                 // Public key of this node
+	IP            string                 // TCP-4 Address
+	Port          int                    // Port
+	AddressToNode map[string]*RemoteNode // Remote nodes
 }

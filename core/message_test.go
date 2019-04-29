@@ -5,31 +5,33 @@ import (
 	"testing"
 )
 
-func TestMessageEQ(t *testing.T) {
-	m1 := Message{Type: 0x01, Data: []byte{0x01, 0x02, 0x03}}
-	m2 := Message{Type: 0x01, Data: []byte{0x01, 0x02, 0x03}}
+// Generate random message
+func GenRandomMessage() Message {
+	m, _ := NewMessage()
 
-	if !m2.EqualWith(m1) {
-		panic(errors.New("(Message) EqualWith() testing failed."))
-	}
+	m.Type = GenRandomBytes(1)[0]
+	m.SourceID = GenRandomBytes(8)
+	m.Data = GenRandomBytes(8)
+	return m
 }
 
-func TestMessageMarshal(t *testing.T) {
-	m1 := Message{Type: 0x01, Data: []byte{0x00, 0x01, 0x02, 0x03}}
+// Test Message marshal functions.
+func TestMessageMarshalJson(t *testing.T) {
+	m1 := GenRandomMessage()
 
-	mBytes, err := m1.MarshalBinary()
+	m1json, err := m1.MarshalJson()
 	if err != nil {
-		panic(errors.New("(Message) MarshalBinary() testing failed."))
+		panic(errors.New("(Message) MarshalJson() testing failed."))
 	}
 
-	m2 := new(Message)
+	var m2 Message
 
-	err = m2.UnmarshalBinary(mBytes)
+	err = m2.UnmarshalJson(m1json)
 	if err != nil {
-		panic(err)
+		panic(errors.New("(*Message) UnmarshalJson() testing failed."))
 	}
 
-	if !m2.EqualWith(m1) {
-		panic(errors.New("(*Message) UnmarshalBinary() testing failed."))
+	if !m1.EqualWith(m2) {
+		panic(errors.New("(Message) MarshalJson()/UnmarshalJson() testing failed."))
 	}
 }
