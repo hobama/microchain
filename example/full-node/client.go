@@ -1,20 +1,33 @@
 package main
 
+import (
+	"github.com/bosoncat/microchain/core"
+)
+
 type client struct {
+	node     *core.Node
 	terminal chan string
 }
 
-func newClient() *client {
+// Generate new client.
+func newClient(ip string, port int) (*client, error) {
+	// new client
 	c := &client{
-		terminal: make(chan string)}
+		node:     core.NewNode(ip, port),
+		terminal: make(chan string),
+	}
 
+	// initialize network
+	go c.node.Run()
+
+	// initialize print loop
 	go c.printLoop()
 
-	return c
-}
+	go func() {
+		for p := range c.node.IncommingPacket {
+			c.terminal <- string(p.Content)
+		}
+	}()
 
-func main() {
-	c := newClient()
-
-	c.repl()
+	return c, nil
 }
