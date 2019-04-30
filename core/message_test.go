@@ -1,18 +1,38 @@
 package core
 
 import (
+	"bytes"
 	"errors"
 	"testing"
 )
 
 // Generate random message
 func GenRandomMessage() Message {
-	m, _ := NewMessage()
+	return Message{
+		Type: GenRandomBytes(1)[0],
+		Data: GenRandomBytes(10),
+	}
+}
 
-	m.Type = GenRandomBytes(1)[0]
-	m.SourceID = GenRandomBytes(8)
-	m.Data = GenRandomBytes(8)
-	return m
+// Test PingMsg marshal function.
+func TestPingMsgMarshalJson(t *testing.T) {
+	p1 := PingMsg{PublicKey: GenRandomBytes(32)}
+
+	p1json, err := p1.MarshalJson()
+	if err != nil {
+		panic(errors.New("(PingMsg) MarshalJson() testing failed."))
+	}
+
+	var p2 PingMsg
+
+	err = p2.UnmarshalJson(p1json)
+	if err != nil {
+		panic(errors.New("(*PingMsg) UnmarshalJson() testing failed."))
+	}
+
+	if !bytes.Equal(p1.PublicKey, p2.PublicKey) {
+		panic(errors.New("(PingMsg) MarshalJson()/UnmarshalJson() testing failed."))
+	}
 }
 
 // Test Message marshal functions.

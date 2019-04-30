@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"github.com/bosoncat/microchain/core"
 	"os"
 	"strings"
 )
@@ -17,10 +18,9 @@ func (c *client) repl() {
 
 		switch input {
 		case "nodes":
-			c.terminal <- "Nodes\n"
-
-			for i := 0; i < 5; i++ {
-				c.terminal <- fmt.Sprintf("aaa\n")
+			for _, n := range c.node.RoutingTable {
+				base58PK := core.Base58Encode(n.PublicKey[:32])
+				c.terminal <- fmt.Sprintf("# %s Lastseen: %d Public key: %s\n", n.Address.String(), n.Lastseen, base58PK)
 			}
 		}
 	}
