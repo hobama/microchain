@@ -6,35 +6,37 @@ import (
 )
 
 const (
+	// MessageOptionsBufferSize ...
 	MessageOptionsBufferSize int = 4
 
-	// Below are message types definitions
+	// Ping ...
 	Ping byte = 0x01 // Ping node, test if node is online
+	// Join ...
 	Join byte = 0x02 // Join network
 )
 
-// Ping message.
+// PingMsg ... Ping message.
 type PingMsg struct {
 	PublicKey []byte `json:public_key`
 }
 
-// Serialize PingMsg into Json.
+// MarshalJson ... Serialize PingMsg into Json.
 func (p PingMsg) MarshalJson() ([]byte, error) {
 	return json.Marshal(p)
 }
 
-// Read PingMsg from Json.
+// UnmarshalJson ... Read PingMsg from Json.
 func (p *PingMsg) UnmarshalJson(data []byte) error {
 	return json.Unmarshal(data, &p)
 }
 
-// Message carrier.
+// Message ... Message carrier.
 type Message struct {
 	Type byte   `json:"type"` // Message type
 	Data []byte `json:"data"` // Raw data
 }
 
-// Test if two messages are equal.
+// EqualWith ... Test if two messages are equal.
 func (m Message) EqualWith(temp Message) bool {
 	if m.Type != temp.Type {
 		return false
@@ -47,12 +49,12 @@ func (m Message) EqualWith(temp Message) bool {
 	return true
 }
 
-// Serialize message into Json.
+// MarshalJson ... Serialize message into Json.
 func (m Message) MarshalJson() ([]byte, error) {
 	return json.Marshal(m)
 }
 
-// Read message from Json.
+// UnmarshalJson ... Read message from Json.
 func (m *Message) UnmarshalJson(data []byte) error {
 	return json.Unmarshal(data, &m)
 }

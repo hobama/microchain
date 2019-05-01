@@ -5,7 +5,7 @@ import (
 	"strconv"
 )
 
-// Represent other nodes.
+// RemoteNode ... Represent other nodes.
 type RemoteNode struct {
 	PublicKey  []byte        // Public key
 	Address    *net.TCPAddr  // Address
@@ -13,18 +13,19 @@ type RemoteNode struct {
 	VerifiedBy []*RemoteNode // Nodes that verify this node
 }
 
-// Received packect.
+// Packet ... Received packect.
 type Packet struct {
 	Content []byte       // Raw bytes
 	Conn    *net.TCPConn // TCP connection
 }
 
+// IncommingMessage ...
 type IncommingMessage struct {
 	Content Message      // Message
 	Conn    *net.TCPConn // TCP connection
 }
 
-// Represent ourselves.
+// Node ... Represent ourselves.
 type Node struct {
 	Keypair        *KeyPair               // Key pair
 	IP             string                 // IP address
@@ -34,6 +35,7 @@ type Node struct {
 	MessageChannel chan IncommingMessage  // Incomming message
 }
 
+// NewNode ... Generate new node.
 func NewNode(ip string, port int) (*Node, error) {
 	kp, err := NewECDSAKeyPair()
 	if err != nil {
@@ -50,7 +52,7 @@ func NewNode(ip string, port int) (*Node, error) {
 	}, nil
 }
 
-// Run a simple TCP server.
+// Run ... Run a simple TCP server.
 func (n *Node) Run() error {
 	// TODO: Error handling
 	addr, err := net.ResolveTCPAddr("tcp", n.IP+":"+strconv.Itoa(n.Port))
@@ -74,7 +76,7 @@ func (n *Node) Run() error {
 	return nil
 }
 
-// Listen on binding address.
+// receivePacket ... Listen on binding address.
 func (n *Node) receivePacket(packetch chan Packet) {
 	for {
 		// TODO: Error handling
@@ -93,11 +95,9 @@ func (n *Node) receivePacket(packetch chan Packet) {
 		// send packet to channel
 		packetch <- p
 	}
-
-	defer n.Listerner.Close()
 }
 
-// Process packet.
+// processPacket ... Process packet.
 func (n *Node) processPacket(packetch chan Packet) {
 	for p := range packetch {
 		var m Message

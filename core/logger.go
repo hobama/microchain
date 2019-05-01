@@ -5,12 +5,14 @@ import (
 	"log"
 )
 
+// Logger ...
 type Logger struct {
 	Info    *log.Logger
 	Warning *log.Logger
 	Error   *log.Logger
 }
 
+// InitLogger ...
 func InitLogger(o io.Writer) *Logger {
 	return &Logger{
 		Info:    log.New(o, "[Info]    ", log.Ldate|log.Ltime),
