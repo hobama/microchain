@@ -39,18 +39,18 @@ func TestBlockHeaderMarshalJson(t *testing.T) {
 
 	bh1json, err := bh1.MarshalJson()
 	if err != nil {
-		panic(errors.New("(BlockHeader) MarshalJson() testing failed."))
+		panic(errors.New("(BlockHeader) MarshalJson() testing failed"))
 	}
 
 	var bh2 BlockHeader
 
 	err = bh2.UnmarshalJson(bh1json)
 	if err != nil {
-		panic(errors.New("(*BlockHeader) UnmarshalJson() testing failed."))
+		panic(errors.New("(*BlockHeader) UnmarshalJson() testing failed"))
 	}
 
 	if !bh1.EqualWith(bh2) {
-		panic(errors.New("(BlockHeader) MarshalJson()/UnmarshalJson() testing failed."))
+		panic(errors.New("(BlockHeader) MarshalJson()/UnmarshalJson() testing failed"))
 	}
 }
 
@@ -60,18 +60,18 @@ func TestBlockMarshalJson(t *testing.T) {
 
 	b1json, err := b1.MarshalJson()
 	if err != nil {
-		panic(errors.New("(Block) MarshalJson() testing failed."))
+		panic(errors.New("(Block) MarshalJson() testing failed"))
 	}
 
 	var b2 Block
 
 	err = b2.UnmarshalJson(b1json)
 	if err != nil {
-		panic(errors.New("(*Block) UnmarshalJson() testing failed."))
+		panic(errors.New("(*Block) UnmarshalJson() testing failed"))
 	}
 
 	if !b1.EqualWith(b2) {
-		panic(errors.New("(Block) MarshalJson()/UnmarshalJson() testing failed."))
+		panic(errors.New("(Block) MarshalJson()/UnmarshalJson() testing failed"))
 	}
 }
 
@@ -81,17 +81,17 @@ func TestBlockSliceMarshalJson(t *testing.T) {
 
 	bs1json, err := bs1.MarshalJson()
 	if err != nil {
-		panic(errors.New("(BlockSlice) MarshalJson() testing failed."))
+		panic(errors.New("(BlockSlice) MarshalJson() testing failed"))
 	}
 
 	var bs2 BlockSlice
 
 	err = bs2.UnmarshalJson(bs1json)
 	if err != nil {
-		panic(errors.New("(*BlockSlice) UnmarshalJson() testing failed."))
+		panic(errors.New("(*BlockSlice) UnmarshalJson() testing failed"))
 	}
 
 	if !bs1.EqualWith(bs2) {
-		panic(errors.New("(BlockSlice) MarshalJson()/UnmarshalJson() testing failed."))
+		panic(errors.New("(BlockSlice) MarshalJson()/UnmarshalJson() testing failed"))
 	}
 }

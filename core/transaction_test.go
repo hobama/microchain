@@ -54,18 +54,18 @@ func TestTXOutputMarshalJson(t *testing.T) {
 
 	tx1json, err := tx1.MarshalJson()
 	if err != nil {
-		panic(errors.New("(TXOutput) MarshalJson() testing failed."))
+		panic(errors.New("(TXOutput) MarshalJson() testing failed"))
 	}
 
 	var tx2 TXOutput
 
 	err = tx2.UnmarshalJson(tx1json)
 	if err != nil {
-		panic(errors.New("(*TXOutput) UnmarshalJson() testing failed."))
+		panic(errors.New("(*TXOutput) UnmarshalJson() testing failed"))
 	}
 
 	if !tx1.EqualWith(tx2) {
-		panic(errors.New("(TXOutput) MarshalJson()/UnmarshalJson() testing failed."))
+		panic(errors.New("(TXOutput) MarshalJson()/UnmarshalJson() testing failed"))
 	}
 }
 
@@ -75,18 +75,18 @@ func TestTransactionHeaderMarshalJson(t *testing.T) {
 
 	th1json, err := th1.MarshalJson()
 	if err != nil {
-		panic(errors.New("(TransactionHeader) MarshalJson() testing failed."))
+		panic(errors.New("(TransactionHeader) MarshalJson() testing failed"))
 	}
 
 	var th2 TransactionHeader
 
 	err = th2.UnmarshalJson(th1json)
 	if err != nil {
-		panic(errors.New("(*TransactionHeader) UnmarshalJson() testing failed."))
+		panic(errors.New("(*TransactionHeader) UnmarshalJson() testing failed"))
 	}
 
 	if !th1.EqualWith(th2) {
-		panic(errors.New("(TransactionHeader) MarshalJson()/UnmarshalJson() testing failed."))
+		panic(errors.New("(TransactionHeader) MarshalJson()/UnmarshalJson() testing failed"))
 	}
 }
 
@@ -96,18 +96,18 @@ func TestTransactionMarshalJson(t *testing.T) {
 
 	tr1json, err := tr1.MarshalJson()
 	if err != nil {
-		panic(errors.New("(Transaction) MarshalJson() testing failed."))
+		panic(errors.New("(Transaction) MarshalJson() testing failed"))
 	}
 
 	var tr2 Transaction
 
 	err = tr2.UnmarshalJson(tr1json)
 	if err != nil {
-		panic(errors.New("(*Transaction) UnmarshalJson() testing failed."))
+		panic(errors.New("(*Transaction) UnmarshalJson() testing failed"))
 	}
 
 	if !tr1.EqualWith(tr2) {
-		panic(errors.New("(Transaction) MarshalJson()/UnmarshalJson() testing failed."))
+		panic(errors.New("(Transaction) MarshalJson()/UnmarshalJson() testing failed"))
 	}
 }
 
@@ -117,17 +117,17 @@ func TestTransactionSliceMarshalJson(t *testing.T) {
 
 	trs1json, err := trs1.MarshalJson()
 	if err != nil {
-		panic(errors.New("(TransactionSlice) MarshalJson() testing failed."))
+		panic(errors.New("(TransactionSlice) MarshalJson() testing failed"))
 	}
 
 	var trs2 TransactionSlice
 
 	err = trs2.UnmarshalJson(trs1json)
 	if err != nil {
-		panic(errors.New("(*TransactionSlice) UnmarshalJson() testing failed."))
+		panic(errors.New("(*TransactionSlice) UnmarshalJson() testing failed"))
 	}
 
 	if !trs1.EqualWith(trs2) {
-		panic(errors.New("(TransactionSlice) MarshalJson()/UnmarshalJson() testing failed."))
+		panic(errors.New("(TransactionSlice) MarshalJson()/UnmarshalJson() testing failed"))
 	}
 }

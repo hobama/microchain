@@ -34,8 +34,11 @@ type Node struct {
 	MessageChannel chan IncommingMessage  // Incomming message
 }
 
-func NewNode(ip string, port int) *Node {
-	kp, _ := NewECDSAKeyPair()
+func NewNode(ip string, port int) (*Node, error) {
+	kp, err := NewECDSAKeyPair()
+	if err != nil {
+		return nil, err
+	}
 
 	return &Node{
 		Keypair:        kp,
@@ -44,16 +47,22 @@ func NewNode(ip string, port int) *Node {
 		RoutingTable:   make(map[string]*RemoteNode),
 		Listerner:      new(net.TCPListener),
 		MessageChannel: make(chan IncommingMessage),
-	}
+	}, nil
 }
 
 // Run a simple TCP server.
-func (n *Node) Run() {
+func (n *Node) Run() error {
 	// TODO: Error handling
-	addr, _ := net.ResolveTCPAddr("tcp", n.IP+":"+strconv.Itoa(n.Port))
+	addr, err := net.ResolveTCPAddr("tcp", n.IP+":"+strconv.Itoa(n.Port))
+	if err != nil {
+		return err
+	}
 
 	// TODO: Error handling
-	listener, _ := net.ListenTCP("tcp", addr)
+	listener, err := net.ListenTCP("tcp", addr)
+	if err != nil {
+		return err
+	}
 
 	n.Listerner = listener
 
@@ -61,6 +70,8 @@ func (n *Node) Run() {
 
 	go n.receivePacket(incommingPacket)
 	go n.processPacket(incommingPacket)
+
+	return nil
 }
 
 // Listen on binding address.

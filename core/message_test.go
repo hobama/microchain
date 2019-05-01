@@ -20,18 +20,18 @@ func TestPingMsgMarshalJson(t *testing.T) {
 
 	p1json, err := p1.MarshalJson()
 	if err != nil {
-		panic(errors.New("(PingMsg) MarshalJson() testing failed."))
+		panic(errors.New("(PingMsg) MarshalJson() testing failed"))
 	}
 
 	var p2 PingMsg
 
 	err = p2.UnmarshalJson(p1json)
 	if err != nil {
-		panic(errors.New("(*PingMsg) UnmarshalJson() testing failed."))
+		panic(errors.New("(*PingMsg) UnmarshalJson() testing failed"))
 	}
 
 	if !bytes.Equal(p1.PublicKey, p2.PublicKey) {
-		panic(errors.New("(PingMsg) MarshalJson()/UnmarshalJson() testing failed."))
+		panic(errors.New("(PingMsg) MarshalJson()/UnmarshalJson() testing failed"))
 	}
 }
 
@@ -41,17 +41,17 @@ func TestMessageMarshalJson(t *testing.T) {
 
 	m1json, err := m1.MarshalJson()
 	if err != nil {
-		panic(errors.New("(Message) MarshalJson() testing failed."))
+		panic(errors.New("(Message) MarshalJson() testing failed"))
 	}
 
 	var m2 Message
 
 	err = m2.UnmarshalJson(m1json)
 	if err != nil {
-		panic(errors.New("(*Message) UnmarshalJson() testing failed."))
+		panic(errors.New("(*Message) UnmarshalJson() testing failed"))
 	}
 
 	if !m1.EqualWith(m2) {
-		panic(errors.New("(Message) MarshalJson()/UnmarshalJson() testing failed."))
+		panic(errors.New("(Message) MarshalJson()/UnmarshalJson() testing failed"))
 	}
 }

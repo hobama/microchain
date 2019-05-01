@@ -1,5 +1,6 @@
 package core
 
+// Blockchain ...
 type Blockchain struct {
 	CurrentBlock     Block            // Current block
 	Chain            BlockSlice       // Stored block chain

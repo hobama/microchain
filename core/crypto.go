@@ -7,12 +7,13 @@ import (
 	"math/big"
 )
 
+// KeyPair ...
 type KeyPair struct {
 	Public  []byte
 	Private []byte
 }
 
-// Generate ECDSA key pair
+// NewECDSAKeyPair ... Generate ECDSA key pair
 // Public key format:
 // | x ... 32 bytes | y ... 32 bytes |
 // Private key format:
@@ -47,7 +48,7 @@ func NewECDSAKeyPair() (*KeyPair, error) {
 	return &KeyPair{Public: publicKeyBytes, Private: privateKeyBytes}, nil
 }
 
-// Sign a hash of a file/message
+// Sign ... Sign a hash of a file/message
 func (kp *KeyPair) Sign(hash []byte) ([]byte, error) {
 	// Decode private key
 	privateKey := new(big.Int)
@@ -81,7 +82,7 @@ func (kp *KeyPair) Sign(hash []byte) ([]byte, error) {
 	return []byte(rs), nil
 }
 
-// Verify signature
+// VerifySignature ... Verify signature
 func VerifySignature(publicKey, signature, hash []byte) bool {
 	xBytes, yBytes := publicKey[:32], publicKey[32:]
 	x := BytesToBigInt(xBytes)

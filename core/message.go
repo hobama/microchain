@@ -9,8 +9,8 @@ const (
 	MessageOptionsBufferSize int = 4
 
 	// Below are message types definitions
-	Ping byte = 0x01
-	Join byte = 0x02
+	Ping byte = 0x01 // Ping node, test if node is online
+	Join byte = 0x02 // Join network
 )
 
 // Ping message.
