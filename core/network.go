@@ -111,3 +111,36 @@ func (n *Node) processPacket(packetch chan Packet) {
 		n.MessageChannel <- IncommingMessage{Content: m, Conn: p.Conn}
 	}
 }
+
+// Send ... Send message to given node.
+func (n *Node) Send(address string, data []byte, handleCallback func([]byte) error) error {
+	addr, err := net.ResolveTCPAddr("tcp", address)
+	if err != nil {
+		return err
+	}
+
+	conn, err := net.DialTCP("tcp", nil, addr)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
+	_, err = conn.Write(data)
+	if err != nil {
+		return err
+	}
+
+	buf := make([]byte, 4096)
+
+	buflen, err := conn.Read(buf)
+	if err != nil {
+		return err
+	}
+
+	err = handleCallback(buf[:buflen])
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

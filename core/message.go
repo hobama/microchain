@@ -15,19 +15,27 @@ const (
 	Join byte = 0x02 // Join network
 )
 
-// PingMsg ... Ping message.
-type PingMsg struct {
+// PingData ... Ping data.
+type PingData struct {
 	PublicKey []byte `json:public_key`
 }
 
-// MarshalJson ... Serialize PingMsg into Json.
-func (p PingMsg) MarshalJson() ([]byte, error) {
+// MarshalJson ... Serialize PingData into Json.
+func (p PingData) MarshalJson() ([]byte, error) {
 	return json.Marshal(p)
 }
 
-// UnmarshalJson ... Read PingMsg from Json.
-func (p *PingMsg) UnmarshalJson(data []byte) error {
+// UnmarshalJson ... Read PingData from Json.
+func (p *PingData) UnmarshalJson(data []byte) error {
 	return json.Unmarshal(data, &p)
+}
+
+// NewPingMessage ... Generate new ping message.
+func NewPingMessage(n Node) Message {
+	data := PingData{n.Keypair.Public}
+	dataJSON, _ := data.MarshalJson()
+
+	return Message{Type: Ping, Data: dataJSON}
 }
 
 // Message ... Message carrier.

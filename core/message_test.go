@@ -14,24 +14,24 @@ func GenRandomMessage() Message {
 	}
 }
 
-// Test PingMsg marshal function.
+// Test PingData marshal function.
 func TestPingMsgMarshalJson(t *testing.T) {
-	p1 := PingMsg{PublicKey: GenRandomBytes(32)}
+	p1 := PingData{PublicKey: GenRandomBytes(32)}
 
 	p1json, err := p1.MarshalJson()
 	if err != nil {
-		panic(errors.New("(PingMsg) MarshalJson() testing failed"))
+		panic(errors.New("(PingData) MarshalJson() testing failed"))
 	}
 
-	var p2 PingMsg
+	var p2 PingData
 
 	err = p2.UnmarshalJson(p1json)
 	if err != nil {
-		panic(errors.New("(*PingMsg) UnmarshalJson() testing failed"))
+		panic(errors.New("(*PingData) UnmarshalJson() testing failed"))
 	}
 
 	if !bytes.Equal(p1.PublicKey, p2.PublicKey) {
-		panic(errors.New("(PingMsg) MarshalJson()/UnmarshalJson() testing failed"))
+		panic(errors.New("(PingData) MarshalJson()/UnmarshalJson() testing failed"))
 	}
 }
 
