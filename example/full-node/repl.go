@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/bosoncat/microchain/core"
@@ -13,6 +14,7 @@ import (
 // Options
 var queryNodesOpt = regexp.MustCompile(`nodes`)
 var pingNodeOpt = regexp.MustCompile(`ping`)
+var joinNetworkOpt = regexp.MustCompile(`join`)
 
 // Common used regex
 var addrRegex = regexp.MustCompile(`(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}:\d+`)
@@ -25,16 +27,20 @@ func (c *client) repl() {
 		input = strings.TrimSpace(input)
 
 		if queryNodesOpt.MatchString(input) {
+			// Query nodes in routing table.
 			if b, msg := checkQueryNodesCommand(input); !b {
 				c.terminal <- msg
 				continue
 			}
 
+			c.terminal <- fmt.Sprintf("Currently, %d nodes in routing table.\n", len(c.node.RoutingTable))
+
 			for _, n := range c.node.RoutingTable {
 				base58PK := core.Base58Encode(n.PublicKey[:32])
-				c.terminal <- fmt.Sprintf("# %s Lastseen: %d Public key: %s\n", n.Address.String(), n.Lastseen, base58PK)
+				c.terminal <- fmt.Sprintf("# %s Lastseen: %d Public key: %s\n", n.Address, n.Lastseen, base58PK)
 			}
 		} else if pingNodeOpt.MatchString(input) {
+			// Ping node.
 			b, msg, addrs := checkPingNodeCommand(input)
 			if !b {
 				c.terminal <- msg
@@ -48,13 +54,15 @@ func (c *client) repl() {
 					err := c.pingNode(addr, c.pingNodeCallBack)
 
 					if err != nil {
-						c.terminal <- err.Error()
+						c.terminal <- err.Error() + "\n"
 						continue
 					}
 
 					c.terminal <- fmt.Sprintf("%s responded and it's in good state ...\n", addr)
 				}
 			}()
+		} else if joinNetworkOpt.MatchString(input) {
+			// Join p2p network through node.
 		} else if input == "" {
 			// Do nothing
 		} else {
@@ -89,8 +97,7 @@ func checkPingNodeCommand(s string) (bool, string, []string) {
 }
 
 func (c *client) pingNode(addr string, pingNodeCallback func([]byte) error) error {
-
-	p := core.NewPingMessage(*c.node)
+	p := core.NewPingMessage(c.node.Keypair.Public, c.node.IP+":"+strconv.Itoa(c.node.Port))
 	pjson, err := p.MarshalJson()
 	if err != nil {
 		return err

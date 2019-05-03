@@ -1,16 +1,19 @@
 package core
 
 import (
+	"bytes"
+	"encoding/json"
 	"net"
 	"strconv"
+	"sync"
 )
 
 // RemoteNode ... Represent other nodes.
 type RemoteNode struct {
-	PublicKey  []byte        // Public key
-	Address    *net.TCPAddr  // Address
-	Lastseen   int           // The unix time of seeing this node last time
-	VerifiedBy []*RemoteNode // Nodes that verify this node
+	PublicKey  []byte        `json:"public_key"` // Public key
+	Address    string        `json:"address"`    // Address
+	Lastseen   int           `json:"Lastseen"`   // The unix time of seeing this node last time
+	VerifiedBy []*RemoteNode `json:"-"`          // Nodes that verify this node
 }
 
 // Packet ... Received packect.
@@ -27,12 +30,13 @@ type IncommingMessage struct {
 
 // Node ... Represent ourselves.
 type Node struct {
-	Keypair        *KeyPair               // Key pair
-	IP             string                 // IP address
-	Port           int                    // Port
-	RoutingTable   map[string]*RemoteNode // Routing table (public key, node)
-	Listerner      *net.TCPListener       // TCP listener
-	MessageChannel chan IncommingMessage  // Incomming message
+	Keypair          *KeyPair               // Key pair
+	IP               string                 // IP address
+	Port             int                    // Port
+	RoutingTableLock sync.RWMutex           // Routing table read write lock
+	RoutingTable     map[string]*RemoteNode // Routing table (public key, node)
+	Listerner        *net.TCPListener       // TCP listener
+	MessageChannel   chan IncommingMessage  // Incomming message
 }
 
 // NewNode ... Generate new node.
@@ -43,12 +47,13 @@ func NewNode(ip string, port int) (*Node, error) {
 	}
 
 	return &Node{
-		Keypair:        kp,
-		IP:             ip,
-		Port:           port,
-		RoutingTable:   make(map[string]*RemoteNode),
-		Listerner:      new(net.TCPListener),
-		MessageChannel: make(chan IncommingMessage),
+		Keypair:          kp,
+		IP:               ip,
+		Port:             port,
+		RoutingTableLock: sync.RWMutex{},
+		RoutingTable:     make(map[string]*RemoteNode),
+		Listerner:        new(net.TCPListener),
+		MessageChannel:   make(chan IncommingMessage),
 	}, nil
 }
 
@@ -143,4 +148,95 @@ func (n *Node) Send(address string, data []byte, handleCallback func([]byte) err
 	}
 
 	return nil
+}
+
+// CheckAndAddNodeToRoutingTable ... Check and add node to routing table.
+func (n *Node) CheckAndAddNodeToRoutingTable(rn RemoteNode) {
+	n.RoutingTableLock.Lock()
+	defer n.RoutingTableLock.Unlock()
+
+	if n.RoutingTable[Base58Encode(rn.PublicKey)] != nil {
+		return
+	}
+
+	n.RoutingTable[Base58Encode(rn.PublicKey)] = &rn
+}
+
+// UpdateNodeForGivenPublicKey ... Update node for given public key.
+func (n *Node) UpdateNodeForGivenPublicKey(pk []byte, rn RemoteNode) {
+	n.RoutingTableLock.Lock()
+	defer n.RoutingTableLock.Unlock()
+
+	n.RoutingTable[Base58Encode(pk)] = &rn
+}
+
+// GetNodeByPublicKey ... Get node by public key.
+func (n *Node) GetNodeByPublicKey(pk []byte) RemoteNode {
+	n.RoutingTableLock.RLock()
+	defer n.RoutingTableLock.RUnlock()
+
+	rn := n.RoutingTable[Base58Encode(pk)]
+
+	return *rn
+}
+
+// GetNodesOfRoutingTable ... Get nodes of routing table.
+func (n *Node) GetNodesOfRoutingTable() (int, []RemoteNode) {
+	n.RoutingTableLock.RLock()
+	defer n.RoutingTableLock.RUnlock()
+
+	var nodes []RemoteNode
+
+	for _, rn := range n.RoutingTable {
+		nodes = append(nodes, *rn)
+	}
+
+	return len(nodes), nodes
+}
+
+// IsInRoutingTable .. Is in routing table.
+func (n *Node) IsInRoutingTable(pk []byte) bool {
+	n.RoutingTableLock.RLock()
+	defer n.RoutingTableLock.RUnlock()
+
+	if n.RoutingTable[Base58Encode(pk)] != nil {
+		return true
+	}
+
+	return false
+}
+
+// RemoveNodeByPublicKey ... Remove node by public key.
+func (n *Node) RemoveNodeByPublicKey(pk []byte) {
+	n.RoutingTableLock.Lock()
+	defer n.RoutingTableLock.Unlock()
+
+	delete(n.RoutingTable, Base58Encode(pk))
+}
+
+// MarshalJson ... Serialize RemoteNode into Json.
+func (rn RemoteNode) MarshalJson() ([]byte, error) {
+	return json.Marshal(rn)
+}
+
+// UnmarshalJson ... Read RemoteNode from Json.
+func (rn *RemoteNode) UnmarshalJson(data []byte) error {
+	return json.Unmarshal(data, &rn)
+}
+
+// EqualWith ... Test if two remote nodes are equal.
+func (rn RemoteNode) EqualWith(temp RemoteNode) bool {
+	if !bytes.Equal(rn.PublicKey, temp.PublicKey) {
+		return false
+	}
+
+	if rn.Address != temp.Address {
+		return false
+	}
+
+	if rn.Lastseen != temp.Lastseen {
+		return false
+	}
+
+	return true
 }
