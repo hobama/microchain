@@ -109,6 +109,15 @@ func (st *SyncTransactionsData) UnmarshalJson(data []byte) error {
 	return json.Unmarshal(data, &st)
 }
 
+// NewSyncTransactionsMessage ... Generate new sync transactions message.
+func NewSyncTransactionsMessage(transactions TransactionSlice) Message {
+	data := SyncTransactionsData{transactions}
+
+	dataJSON, _ := data.MarshalJson()
+
+	return Message{Type: SyncTransactions, Data: dataJSON}
+}
+
 // Message ... Message carrier.
 type Message struct {
 	Type byte   `json:"type"` // Message type

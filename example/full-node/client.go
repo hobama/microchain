@@ -94,7 +94,12 @@ func pingResp(m core.IncommingMessage, c *client) {
 		})
 	} else {
 		// Update lastseen value.
-		rn := c.node.GetNodeByPublicKey(p.PublicKey)
+		b, rn := c.node.GetNodeByPublicKey(p.PublicKey)
+
+		if !b {
+			return
+		}
+
 		rn.Lastseen = int(time.Now().Unix())
 
 		c.node.CheckAndAddNodeToRoutingTable(rn)

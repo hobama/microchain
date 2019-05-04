@@ -11,12 +11,6 @@ import (
 	"github.com/bosoncat/microchain/core"
 )
 
-// Options
-var queryNodesOpt = regexp.MustCompile(`nodes`)
-var pingNodeOpt = regexp.MustCompile(`ping`)
-var joinNetworkOpt = regexp.MustCompile(`join`)
-var sendTransactionOpt = regexp.MustCompile(`tran`)
-
 // Common used regex
 var addrRegex = regexp.MustCompile(`(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}:\d+`)
 
@@ -63,39 +57,43 @@ func (c *client) repl() {
 			}()
 		} else if joinNetworkOpt.MatchString(input) {
 			// Join p2p network through node.
+			// TODO: I don't want to implement this block now. Because I have very limited time to submit my final project.
+
 		} else if sendTransactionOpt.MatchString(input) {
 			// Send transaction to given node.
+			b, msg := checkSendTransactionCommand(input)
+			if !b {
+				c.terminal <- msg
+				continue
+			}
+
+			// TODO:
+
+		} else if queryNodesOpt.MatchString(input) {
+			// Query pending jobs.
+			b, msg := checkQueryPendingCommand(input)
+			if !b {
+				c.terminal <- msg
+				continue
+			}
+
+			// TODO:
+
+		} else if confirmReqOpt.MatchString(input) {
+			b, msg, _ := checkConfirmCommand(input)
+			if !b {
+				c.terminal <- msg
+				continue
+			}
+
+			// TODO:
+
 		} else if input == "" {
-			// Do nothing
+			// Do nothing, intended leaving blank.
 		} else {
 			c.terminal <- fmt.Sprintf("Unknown command: %s\n", input)
 		}
 	}
-}
-
-func checkQueryNodesCommand(s string) (bool, string) {
-	if s != "nodes" {
-		return false, fmt.Sprintf("Unknown command: %s, do you mean: nodes ?\n", s)
-	}
-
-	return true, ""
-}
-
-func checkPingNodeCommand(s string) (bool, string, []string) {
-	if !strings.HasPrefix(s, "ping") {
-		return false, fmt.Sprintf("Unknown command: %s, do you mean: ping ?\n", s), []string{}
-	}
-
-	// Remove `ping`
-	s = strings.TrimSpace(s[4:])
-
-	addrs := addrRegex.FindAllString(s, -1)
-
-	if len(addrs) == 0 {
-		return false, "Please check the address that you want to ping\n", []string{}
-	}
-
-	return true, "", addrs
 }
 
 func (c *client) pingNode(addr string, pingNodeCallback func([]byte) error) error {

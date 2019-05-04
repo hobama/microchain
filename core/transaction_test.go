@@ -2,7 +2,9 @@ package core
 
 import (
 	"errors"
+	"fmt"
 	"math/rand"
+	"sort"
 	"testing"
 )
 
@@ -129,5 +131,25 @@ func TestTransactionSliceMarshalJson(t *testing.T) {
 
 	if !trs1.EqualWith(trs2) {
 		panic(errors.New("(TransactionSlice) MarshalJson()/UnmarshalJson() testing failed"))
+	}
+}
+
+// Test sorting transactions.
+func TestSortTransactions(t *testing.T) {
+	var trs TransactionSlice
+
+	for i := 4; i >= 0; i-- {
+		th := TransactionHeader{Timestamp: i}
+		t := Transaction{Header: th}
+
+		trs = append(trs, t)
+	}
+
+	sort.Sort(trs)
+
+	for i, tr := range trs {
+		if tr.Header.Timestamp != i {
+			panic(fmt.Errorf("Sort() testing failed"))
+		}
 	}
 }

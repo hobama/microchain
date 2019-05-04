@@ -133,6 +133,12 @@ func (tr *Transaction) UnmarshalJson(data []byte) error {
 // TransactionSlice ...
 type TransactionSlice []Transaction
 
+func (trs TransactionSlice) Len() int      { return len(trs) }
+func (trs TransactionSlice) Swap(i, j int) { trs[i], trs[j] = trs[j], trs[i] }
+func (trs TransactionSlice) Less(i, j int) bool {
+	return trs[i].Header.Timestamp < trs[j].Header.Timestamp
+}
+
 // TODO: We have 2 ways to represent transactions in a block
 // (1) TransactionSlice: Consume lower memory, but low performace
 // (2) TransactionsMap: High performance, but consume more memory
