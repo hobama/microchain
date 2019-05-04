@@ -16,6 +16,11 @@ type RemoteNode struct {
 	VerifiedBy []*RemoteNode `json:"-"`          // Nodes that verify this node
 }
 
+// Addr ... Get address of remote node.
+func (rn *RemoteNode) Addr() string {
+	return rn.Address
+}
+
 // Packet ... Received packect.
 type Packet struct {
 	Content []byte       // Raw bytes
@@ -30,13 +35,16 @@ type IncommingMessage struct {
 
 // Node ... Represent ourselves.
 type Node struct {
-	Keypair          *KeyPair               // Key pair
-	IP               string                 // IP address
-	Port             int                    // Port
-	RoutingTableLock sync.RWMutex           // Routing table read write lock
-	RoutingTable     map[string]*RemoteNode // Routing table (public key, node)
-	Listerner        *net.TCPListener       // TCP listener
-	MessageChannel   chan IncommingMessage  // Incomming message
+	KeypairLock          sync.RWMutex           // Key pair lock, we should change keypair of a node after it sends a transaction.
+	Keypair              *KeyPair               // Key pair
+	IP                   string                 // IP address
+	Port                 int                    // Port
+	RoutingTableLock     sync.RWMutex           // Routing table read write lock
+	RoutingTable         map[string]*RemoteNode // Routing table (public key, node)
+	TransactionsPoolLock sync.RWMutex           // Transactions pool read write lock
+	TransactionsPool     TransactionSlice       // Transactions pool
+	Listerner            *net.TCPListener       // TCP listener
+	MessageChannel       chan IncommingMessage  // Incomming message
 }
 
 // NewNode ... Generate new node.
@@ -47,26 +55,22 @@ func NewNode(ip string, port int) (*Node, error) {
 	}
 
 	return &Node{
-		Keypair:          kp,
-		IP:               ip,
-		Port:             port,
-		RoutingTableLock: sync.RWMutex{},
-		RoutingTable:     make(map[string]*RemoteNode),
-		Listerner:        new(net.TCPListener),
-		MessageChannel:   make(chan IncommingMessage),
+		KeypairLock:          sync.RWMutex{},
+		Keypair:              kp,
+		IP:                   ip,
+		Port:                 port,
+		RoutingTableLock:     sync.RWMutex{},
+		RoutingTable:         make(map[string]*RemoteNode),
+		TransactionsPoolLock: sync.RWMutex{},
+		TransactionsPool:     TransactionSlice{},
+		Listerner:            new(net.TCPListener),
+		MessageChannel:       make(chan IncommingMessage),
 	}, nil
 }
 
 // Run ... Run a simple TCP server.
 func (n *Node) Run() error {
-	// TODO: Error handling
-	addr, err := net.ResolveTCPAddr("tcp", n.IP+":"+strconv.Itoa(n.Port))
-	if err != nil {
-		return err
-	}
-
-	// TODO: Error handling
-	listener, err := net.ListenTCP("tcp", addr)
+	listener, err := n.TCPListener()
 	if err != nil {
 		return err
 	}
@@ -77,6 +81,51 @@ func (n *Node) Run() error {
 
 	go n.receivePacket(incommingPacket)
 	go n.processPacket(incommingPacket)
+
+	return nil
+}
+
+// Addr ... Get address of node.
+func (n *Node) Addr() string {
+	return n.IP + ":" + strconv.Itoa(n.Port)
+}
+
+// TCPListener ... Get TCP listener of node.
+func (n *Node) TCPListener() (*net.TCPListener, error) {
+	addr, err := n.TCPAddr()
+	if err != nil {
+		return nil, err
+	}
+
+	return net.ListenTCP("tcp", addr)
+}
+
+// TCPAddr ... Get TCP address of node.
+func (n *Node) TCPAddr() (*net.TCPAddr, error) {
+	return net.ResolveTCPAddr("tcp", n.Addr())
+}
+
+// PublicKey ... Get public key of node.
+func (n *Node) PublicKey() []byte {
+	n.KeypairLock.RLock()
+	defer n.KeypairLock.RUnlock()
+
+	kp := n.Keypair
+
+	return kp.Public
+}
+
+// UpdateKeyPair ... Update key pair for node.
+func (n *Node) UpdateKeyPair() error {
+	n.KeypairLock.Lock()
+	defer n.KeypairLock.Unlock()
+
+	kp, err := NewECDSAKeyPair()
+	if err != nil {
+		return err
+	}
+
+	n.Keypair = kp
 
 	return nil
 }
@@ -148,6 +197,15 @@ func (n *Node) Send(address string, data []byte, handleCallback func([]byte) err
 	}
 
 	return nil
+}
+
+// Broadcast ... Broadcast data to all nodes.
+func (n *Node) Broadcast(data []byte, handleCallback func([]byte) error) {
+	_, nodes := n.GetNodesOfRoutingTable()
+
+	for _, rn := range nodes {
+		n.Send(rn.Addr(), data, handleCallback)
+	}
 }
 
 // CheckAndAddNodeToRoutingTable ... Check and add node to routing table.

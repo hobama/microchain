@@ -1,6 +1,7 @@
 package core
 
 import (
+	"fmt"
 	"testing"
 )
 
@@ -8,12 +9,10 @@ func TestKeyGen(t *testing.T) {
 	for i := 0; i < 5; i++ {
 		keyPair, err := NewECDSAKeyPair()
 		if err != nil {
-			t.Error(err)
+			panic(err)
 		}
 		if len(keyPair.Public) != 64 || len(keyPair.Private) != 32 {
-			t.Errorf("%d", len(keyPair.Public))
-			t.Errorf("%d", len(keyPair.Private))
-			t.Error("Invalid key pair")
+			panic(fmt.Errorf("Invalid key pair"))
 		}
 	}
 }
@@ -30,9 +29,9 @@ func TestKeySigningAndVerify(t *testing.T) {
 
 		signature, err := keyPair.Sign(hash)
 		if err != nil {
-			t.Error(err)
+			panic(err)
 		} else if !VerifySignature(keyPair.Public, signature, hash) {
-			t.Error("Invalid signature")
+			panic(fmt.Errorf("Invalid signature"))
 		}
 	}
 }

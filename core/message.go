@@ -9,12 +9,12 @@ const (
 	// MessageOptionsBufferSize ...
 	MessageOptionsBufferSize int = 4
 
-	// Ping ...
-	Ping byte = 0x01 // Ping node, test if node is online
-	// Join ...
-	Join byte = 0x02 // Join network
-	// SyncNodes ...
-	SyncNodes byte = 0x03 // Sync routing table
+	Ping                 byte = 0x01 // Ping node, test if node is online
+	Join                 byte = 0x02 // Join network
+	SyncNodes            byte = 0x03 // Sync routing table
+	SendTransaction      byte = 0x04 // Send transaction to given node
+	BroadcastTransaction byte = 0x05 // Broadcast transaction by requestee node
+	SyncTransactions     byte = 0x06 // Sync transactions
 )
 
 // PingData ... Ping data.
@@ -77,6 +77,36 @@ func NewSyncNodesMessage(nodes []RemoteNode) Message {
 	dataJSON, _ := data.MarshalJson()
 
 	return Message{Type: SyncNodes, Data: dataJSON}
+}
+
+// SyncTransactionsData ... Sync transactions.
+type SyncTransactionsData struct {
+	Transactions TransactionSlice `json:"transactions"`
+}
+
+// EqualWith ... Test if two SyncTransactionsData are equal.
+func (st SyncTransactionsData) EqualWith(temp SyncTransactionsData) bool {
+	if len(st.Transactions) != len(temp.Transactions) {
+		return false
+	}
+
+	for i, t := range st.Transactions {
+		if !t.EqualWith(temp.Transactions[i]) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// MarshalJson ... Serialize SyncTransactionsData into Json.
+func (st SyncTransactionsData) MarshalJson() ([]byte, error) {
+	return json.Marshal(st)
+}
+
+// UnmarshalJson ... Read SyncTransactionsData from Json.
+func (st *SyncTransactionsData) UnmarshalJson(data []byte) error {
+	return json.Unmarshal(data, &st)
 }
 
 // Message ... Message carrier.

@@ -56,6 +56,29 @@ func TestSyncNodesDataMarshalJson(t *testing.T) {
 	}
 }
 
+// Test SyncTransactionsData marshal function.
+func TestSyncTransactionsDataMarshalJson(t *testing.T) {
+	trs := GenRandomTransactionSlice(5)
+
+	st1 := SyncTransactionsData{Transactions: trs}
+
+	st1json, err := st1.MarshalJson()
+	if err != nil {
+		panic(fmt.Errorf("(SyncTransactionsData) MarshalJson() testing failed"))
+	}
+
+	var st2 SyncTransactionsData
+
+	err = st2.UnmarshalJson(st1json)
+	if err != nil {
+		panic(fmt.Errorf("(*SyncTransactionsData) UnmarshalJson() testing failed"))
+	}
+
+	if !st1.EqualWith(st2) {
+		panic(fmt.Errorf("(SyncTransactionsData) MarshalJson()/UnmarshalJson() testing failed"))
+	}
+}
+
 // Test Message marshal function.
 func TestMessageMarshalJson(t *testing.T) {
 	m1 := GenRandomMessage()

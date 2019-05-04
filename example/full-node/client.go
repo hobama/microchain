@@ -20,9 +20,6 @@ var resp = map[byte]func(core.IncommingMessage, *client){
 	// Response for Ping
 	core.Ping: pingResp,
 
-	// Response for Join.
-	core.Join: joinResp,
-
 	core.SyncNodes: syncNodesResp,
 }
 
@@ -106,10 +103,6 @@ func pingResp(m core.IncommingMessage, c *client) {
 	m.Conn.Write([]byte("pong"))
 }
 
-// Callback function for join request.
-func joinResp(m core.IncommingMessage, c *client) {
-}
-
 // Callback function for sync nodes.
 func syncNodesResp(m core.IncommingMessage, c *client) {
 	var sn core.SyncNodesData
@@ -138,24 +131,22 @@ func (c *client) runWebServer(port int) {
 // Maintain routing table.
 func (c *client) maintainRoutingTable() {
 	for {
-		// FIXME: We should be able to change this value.
-		time.Sleep(5 * time.Second)
+		time.Sleep(pingPeriod * time.Second)
 
 		_, nodes := c.node.GetNodesOfRoutingTable()
 
-		p := core.NewPingMessage(c.node.Keypair.Public, c.node.IP+":"+strconv.Itoa(c.node.Port))
+		p := core.NewPingMessage(c.node.PublicKey(), c.node.Addr())
 		pjson, err := p.MarshalJson()
 		if err != nil {
 			continue
 		}
 
 		for _, n := range nodes {
-
 			err = c.node.Send(n.Address, pjson, func([]byte) error { return nil })
 
 			if err != nil {
 				// Delete if it doesn't respond for a long time.
-				if int(time.Now().Unix())-n.Lastseen > 50 {
+				if int(time.Now().Unix())-n.Lastseen > invalidPeriod {
 					c.node.RemoveNodeByPublicKey(n.PublicKey)
 				}
 
@@ -168,8 +159,7 @@ func (c *client) maintainRoutingTable() {
 // Broadcast known nodes.
 func (c *client) broadcastKnownNodes() {
 	for {
-		// FIXME: We should be able to change this value.
-		time.Sleep(7 * time.Second)
+		time.Sleep(broadcastRoutingTablePeriod * time.Second)
 
 		nodes := c.collectNodesFromRoutingTable()
 
@@ -180,9 +170,7 @@ func (c *client) broadcastKnownNodes() {
 			continue
 		}
 
-		for _, n := range c.node.RoutingTable {
-			err = c.node.Send(n.Address, pjson, func(data []byte) error { return nil })
-		}
+		c.node.Broadcast(pjson, func([]byte) error { return nil })
 	}
 }
 
@@ -194,7 +182,7 @@ func (c *client) collectNodesFromRoutingTable() []core.RemoteNode {
 
 	nodes = append(nodes, core.RemoteNode{
 		PublicKey: c.node.Keypair.Public,
-		Address:   c.node.IP + ":" + strconv.Itoa(c.node.Port),
+		Address:   c.node.Addr(),
 		Lastseen:  int(time.Now().Unix()),
 	})
 

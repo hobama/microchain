@@ -15,6 +15,7 @@ import (
 var queryNodesOpt = regexp.MustCompile(`nodes`)
 var pingNodeOpt = regexp.MustCompile(`ping`)
 var joinNetworkOpt = regexp.MustCompile(`join`)
+var sendTransactionOpt = regexp.MustCompile(`tran`)
 
 // Common used regex
 var addrRegex = regexp.MustCompile(`(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}:\d+`)
@@ -35,9 +36,8 @@ func (c *client) repl() {
 
 			c.terminal <- fmt.Sprintf("Currently, %d nodes in routing table.\n", len(c.node.RoutingTable))
 
-			for _, n := range c.node.RoutingTable {
-				base58PK := core.Base58Encode(n.PublicKey[:32])
-				c.terminal <- fmt.Sprintf("# %s Lastseen: %d Public key: %s\n", n.Address, n.Lastseen, base58PK)
+			for k, n := range c.node.RoutingTable {
+				c.terminal <- fmt.Sprintf("# %s Lastseen: %d Public key: %s\n", n.Address, n.Lastseen, k)
 			}
 		} else if pingNodeOpt.MatchString(input) {
 			// Ping node.
@@ -63,6 +63,8 @@ func (c *client) repl() {
 			}()
 		} else if joinNetworkOpt.MatchString(input) {
 			// Join p2p network through node.
+		} else if sendTransactionOpt.MatchString(input) {
+			// Send transaction to given node.
 		} else if input == "" {
 			// Do nothing
 		} else {
