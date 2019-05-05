@@ -1,7 +1,6 @@
 package core
 
 import (
-	"errors"
 	"fmt"
 	"math/rand"
 	"sort"
@@ -11,9 +10,9 @@ import (
 // Generate random TXOutput.
 func GenRandomTXOutput() TXOutput {
 	return TXOutput{
-		rand.Intn(10000),    // Accepted
-		rand.Intn(10000),    // Rejected
-		GenRandomBytes(100)} // NextPublicKeyHash
+		rand.Intn(10000), // Accepted
+		rand.Intn(10000), // Rejected
+	}
 }
 
 // Generate random Transaction header.
@@ -56,18 +55,18 @@ func TestTXOutputMarshalJson(t *testing.T) {
 
 	tx1json, err := tx1.MarshalJson()
 	if err != nil {
-		panic(errors.New("(TXOutput) MarshalJson() testing failed"))
+		panic(fmt.Errorf("(TXOutput) MarshalJson() testing failed"))
 	}
 
 	var tx2 TXOutput
 
 	err = tx2.UnmarshalJson(tx1json)
 	if err != nil {
-		panic(errors.New("(*TXOutput) UnmarshalJson() testing failed"))
+		panic(fmt.Errorf("(*TXOutput) UnmarshalJson() testing failed"))
 	}
 
 	if !tx1.EqualWith(tx2) {
-		panic(errors.New("(TXOutput) MarshalJson()/UnmarshalJson() testing failed"))
+		panic(fmt.Errorf("(TXOutput) MarshalJson()/UnmarshalJson() testing failed"))
 	}
 }
 
@@ -77,18 +76,18 @@ func TestTransactionHeaderMarshalJson(t *testing.T) {
 
 	th1json, err := th1.MarshalJson()
 	if err != nil {
-		panic(errors.New("(TransactionHeader) MarshalJson() testing failed"))
+		panic(fmt.Errorf("(TransactionHeader) MarshalJson() testing failed"))
 	}
 
 	var th2 TransactionHeader
 
 	err = th2.UnmarshalJson(th1json)
 	if err != nil {
-		panic(errors.New("(*TransactionHeader) UnmarshalJson() testing failed"))
+		panic(fmt.Errorf("(*TransactionHeader) UnmarshalJson() testing failed"))
 	}
 
 	if !th1.EqualWith(th2) {
-		panic(errors.New("(TransactionHeader) MarshalJson()/UnmarshalJson() testing failed"))
+		panic(fmt.Errorf("(TransactionHeader) MarshalJson()/UnmarshalJson() testing failed"))
 	}
 }
 
@@ -98,18 +97,18 @@ func TestTransactionMarshalJson(t *testing.T) {
 
 	tr1json, err := tr1.MarshalJson()
 	if err != nil {
-		panic(errors.New("(Transaction) MarshalJson() testing failed"))
+		panic(fmt.Errorf("(Transaction) MarshalJson() testing failed"))
 	}
 
 	var tr2 Transaction
 
 	err = tr2.UnmarshalJson(tr1json)
 	if err != nil {
-		panic(errors.New("(*Transaction) UnmarshalJson() testing failed"))
+		panic(fmt.Errorf("(*Transaction) UnmarshalJson() testing failed"))
 	}
 
 	if !tr1.EqualWith(tr2) {
-		panic(errors.New("(Transaction) MarshalJson()/UnmarshalJson() testing failed"))
+		panic(fmt.Errorf("(Transaction) MarshalJson()/UnmarshalJson() testing failed"))
 	}
 }
 
@@ -119,18 +118,18 @@ func TestTransactionSliceMarshalJson(t *testing.T) {
 
 	trs1json, err := trs1.MarshalJson()
 	if err != nil {
-		panic(errors.New("(TransactionSlice) MarshalJson() testing failed"))
+		panic(fmt.Errorf("(TransactionSlice) MarshalJson() testing failed"))
 	}
 
 	var trs2 TransactionSlice
 
 	err = trs2.UnmarshalJson(trs1json)
 	if err != nil {
-		panic(errors.New("(*TransactionSlice) UnmarshalJson() testing failed"))
+		panic(fmt.Errorf("(*TransactionSlice) UnmarshalJson() testing failed"))
 	}
 
 	if !trs1.EqualWith(trs2) {
-		panic(errors.New("(TransactionSlice) MarshalJson()/UnmarshalJson() testing failed"))
+		panic(fmt.Errorf("(TransactionSlice) MarshalJson()/UnmarshalJson() testing failed"))
 	}
 }
 
@@ -151,5 +150,27 @@ func TestSortTransactions(t *testing.T) {
 		if tr.Header.Timestamp != i {
 			panic(fmt.Errorf("Sort() testing failed"))
 		}
+	}
+}
+
+// Test verify signature.
+func TestVerifySignature(t *testing.T) {
+	kp, _ := NewECDSAKeyPair()
+
+	tr := GenRandomTransaction()
+
+	tr.Header.RequesterPublicKey = kp.Public
+	tr.Header.RequesteePublicKey = kp.Public
+
+	Sig, _ := kp.Sign(tr.Hash())
+	tr.Header.RequesterSignature = Sig
+	tr.Header.RequesteeSignature = Sig
+
+	if !tr.VerifyRequesterSig() {
+		panic(fmt.Errorf("(Transaction) VerifyRequesterSig() testing failed"))
+	}
+
+	if !tr.VerifyRequesteeSig() {
+		panic(fmt.Errorf("(Transaction) VerifyRequesteeSig() testing failed"))
 	}
 }

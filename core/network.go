@@ -49,6 +49,8 @@ type Node struct {
 	TransactionsPool        map[string]*Transaction // Transactions pool
 	PendingTransactionsLock sync.RWMutex            // Pending transactions lock
 	PendingTransactions     map[string]*Transaction // Pending transactions
+	ChainLock               sync.RWMutex            // Blockchain lock
+	Chain                   Blockchain              // Blockchain
 	Listerner               *net.TCPListener        // TCP listener
 	MessageChannel          chan IncommingMessage   // Incomming message
 }
@@ -70,6 +72,8 @@ func NewNode(ip string, port int) (*Node, error) {
 		TransactionsPool:        make(map[string]*Transaction),
 		PendingTransactionsLock: sync.RWMutex{},
 		PendingTransactions:     make(map[string]*Transaction),
+		ChainLock:               sync.RWMutex{},
+		Chain:                   Blockchain{},
 		Listerner:               new(net.TCPListener),
 		MessageChannel:          make(chan IncommingMessage),
 	}, nil
@@ -289,8 +293,74 @@ func (n *Node) CheckAndAddTransactionToPool(tr Transaction) {
 	n.TransactionsPool[Base58Encode(tr.Header.TransactionID)] = &tr
 }
 
-// GetTransactionByID ... Get transaction by id.
-func (n *Node) GetTransactionByID(id []byte) (bool, Transaction) {
+// VerifyTransaction ... Verify a given transaction,
+func (n *Node) VerifyTransaction(tr Transaction) bool {
+	if bytes.Equal(tr.Header.TransactionID, tr.Header.PrevTransactionID) {
+		// This is genesis transaction.
+		// TODO:
+
+	} else {
+		// This is not genesis transaction.
+		// TODO:
+		// t, prev := n.PrevTransactionOf(tr)
+		// if !t {
+		// 	return false
+		// }
+
+	}
+	// type TXOutput struct {
+	// 	Accepted          int    `json:"accepted"`
+	// 	Rejected          int    `json:"rejected"`
+	// 	NextPublicKeyHash []byte `json:"next_pk_hash"`
+	// }
+
+	// // TransactionHeader ...
+	// type TransactionHeader struct {
+	// 	TransactionID      []byte `json:"id"`            // SHA256(requesterPK, requesteePK, timestamp)
+	// 	Timestamp          int    `json:"timestamp"`     // Unix timestamp
+	// 	PrevTransactionID  []byte `json:"prev_id"`       // Previous transaction ID
+	// 	RequesterPublicKey []byte `json:"requester_pk"`  // Requester public key
+	// 	RequesterSignature []byte `json:"requester_sig"` // Requester signature
+	// 	RequesteePublicKey []byte `json:"requestee_pk"`  // Requestee public key
+	// 	RequesteeSignature []byte `json:"requestee_sig"` // Requestee signature
+	// }
+
+	// // Transaction ...
+	// type Transaction struct {
+	// 	Header TransactionHeader `json:"header"` // Header
+	// 	Meta   []byte            `json:"meta"`   // Meta data field
+	// 	Output TXOutput          `json:"output"` // TXOutput
+	// }
+
+	return false
+}
+
+// PrevTransactionOf ... Get previoud transaction of given transaction.
+func (n *Node) PrevTransactionOf(tr Transaction) (bool, Transaction) {
+	n.ChainLock.RLock()
+	defer n.ChainLock.RUnlock()
+
+	if t, tr := n.Chain.GetTransactionByID(tr.Header.PrevTransactionID); t {
+		return true, tr
+	}
+
+	return false, Transaction{}
+}
+
+// GetTransactionByIDFromChain ... Get transaction by id.
+func (n *Node) GetTransactionByIDFromChain(id []byte) (bool, Transaction) {
+	n.ChainLock.RLock()
+	defer n.ChainLock.RUnlock()
+
+	if t, tr := n.Chain.GetTransactionByID(id); t {
+		return true, tr
+	}
+
+	return false, Transaction{}
+}
+
+// GetTransactionByIDFromPool ... Get transaction by id.
+func (n *Node) GetTransactionByIDFromPool(id []byte) (bool, Transaction) {
 	n.TransactionsPoolLock.RLock()
 	defer n.TransactionsPoolLock.RUnlock()
 

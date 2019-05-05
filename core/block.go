@@ -88,6 +88,11 @@ func (b *Block) UnmarshalJson(data []byte) error {
 	return json.Unmarshal(data, &b)
 }
 
+// GetTransactionByID ... Get transaction by transaction id.
+func (b Block) GetTransactionByID(id []byte) (bool, Transaction) {
+	return b.Transactions.GetTransactionByID(id)
+}
+
 // Contains ... Test if one block is existed in blockslice.
 func (bs BlockSlice) Contains(b Block) (bool, int) {
 	for i, bb := range bs {
@@ -118,4 +123,15 @@ func (bs BlockSlice) MarshalJson() ([]byte, error) {
 // UnmarshalJson ... Read block slice from Json.
 func (bs *BlockSlice) UnmarshalJson(data []byte) error {
 	return json.Unmarshal(data, &bs)
+}
+
+// GetTransactionByID ... Get transaction by transaction id.
+func (bs BlockSlice) GetTransactionByID(id []byte) (bool, Transaction) {
+	for _, b := range bs {
+		if t, tr := b.GetTransactionByID(id); t {
+			return true, tr
+		}
+	}
+
+	return false, Transaction{}
 }
