@@ -79,6 +79,39 @@ func NewSyncNodesMessage(nodes []RemoteNode) Message {
 	return Message{Type: SyncNodes, Data: dataJSON}
 }
 
+// SendTransactionData ... Send transaction.
+type SendTransactionData struct {
+	Transaction `json:"transaction"`
+}
+
+// EqualWith ... Test if two SendTransactionData are equal.
+func (st SendTransactionData) EqualWith(temp SendTransactionData) bool {
+	if !st.Transaction.EqualWith(temp.Transaction) {
+		return false
+	}
+
+	return true
+}
+
+// MarshalJson ... Serialize SendTransactionData into Json.
+func (st SendTransactionData) MarshalJson() ([]byte, error) {
+	return json.Marshal(st)
+}
+
+// Read SendTransactionData from Json.
+func (st *SendTransactionData) UnmarshalJson(data []byte) error {
+	return json.Unmarshal(data, &st)
+}
+
+// NewSendTransactionMessage ... Generate new send transaction message.
+func NewSendTransactionMessage(tr Transaction) Message {
+	data := SendTransactionData{tr}
+
+	dataJSON, _ := data.MarshalJson()
+
+	return Message{Type: SendTransaction, Data: dataJSON}
+}
+
 // SyncTransactionsData ... Sync transactions.
 type SyncTransactionsData struct {
 	Transactions TransactionSlice `json:"transactions"`

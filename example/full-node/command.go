@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+
+	"github.com/bosoncat/microchain/core"
 )
 
 // Options
@@ -47,16 +49,27 @@ func checkQueryPendingCommand(s string) (bool, string) {
 	return true, ""
 }
 
-func checkSendTransactionCommand(s string) (bool, string) {
+func checkSendTransactionCommand(s string) (bool, string, []byte, string) {
 	if !strings.HasPrefix(s, "tran") {
-		return false, fmt.Sprintf("Unknown command: %s, do you mean: tran ?\n", s)
+		return false, fmt.Sprintf("Unknown command: %s, do you mean: tran ?\n", s), nil, ""
 	}
 
 	// Remove `tran`
 	s = strings.TrimSpace(s[4:])
 
 	// TODO:
-	return true, ""
+	tokens := strings.Fields(s)
+
+	if len(tokens) != 2 {
+		return false, fmt.Sprintf("Do you mean: tran id data ?\n"), nil, ""
+	}
+
+	id := core.Base58Decode(tokens[0])
+	if len(id) == 0 {
+		return false, fmt.Sprintf("Invalid node id: %s\n", tokens[0]), nil, ""
+	}
+
+	return true, "", id, tokens[1]
 }
 
 func checkConfirmCommand(s string) (bool, string, []string) {

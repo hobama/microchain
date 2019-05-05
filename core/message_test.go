@@ -79,6 +79,29 @@ func TestSyncTransactionsDataMarshalJson(t *testing.T) {
 	}
 }
 
+// Test SendTransactionData marshal function.
+func TestSendTransactionDataMarshalJson(t *testing.T) {
+	tr1 := GenRandomTransaction()
+
+	st1 := SendTransactionData{tr1}
+
+	st1json, err := st1.MarshalJson()
+	if err != nil {
+		panic(fmt.Errorf("(SendTransactionData) MarshalJson() testing failed"))
+	}
+
+	var st2 SendTransactionData
+
+	err = st2.UnmarshalJson(st1json)
+	if err != nil {
+		panic(fmt.Errorf("(*SendTransactionData) UnmarshalJson() testing failed"))
+	}
+
+	if !st1.EqualWith(st2) {
+		panic(fmt.Errorf("(SendTransactionData) MarshalJson()/UnmarshalJson() testing failed"))
+	}
+}
+
 // Test Message marshal function.
 func TestMessageMarshalJson(t *testing.T) {
 	m1 := GenRandomMessage()

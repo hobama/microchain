@@ -17,10 +17,11 @@ type client struct {
 
 // Callback functions.
 var resp = map[byte]func(core.IncommingMessage, *client){
-	// Response for Ping
 	core.Ping: pingResp,
 
 	core.SyncNodes: syncNodesResp,
+
+	core.SyncTransactions: syncTransactionsResp,
 }
 
 // Generate new client.
@@ -102,7 +103,7 @@ func pingResp(m core.IncommingMessage, c *client) {
 
 		rn.Lastseen = int(time.Now().Unix())
 
-		c.node.CheckAndAddNodeToRoutingTable(rn)
+		c.node.UpdateNodeForGivenPublicKey(rn.PublicKey, rn)
 	}
 
 	m.Conn.Write([]byte("pong"))
@@ -121,6 +122,24 @@ func syncNodesResp(m core.IncommingMessage, c *client) {
 	// Test if node if existed in routing table, if not, add it into routing table.
 	for _, n := range sn.Nodes {
 		c.node.CheckAndAddNodeToRoutingTable(n)
+	}
+
+	m.Conn.Write([]byte("pong"))
+}
+
+// Callback function for sync transactions.
+func syncTransactionsResp(m core.IncommingMessage, c *client) {
+	var st core.SyncTransactionsData
+
+	err := st.UnmarshalJson(m.Content.Data)
+	if err != nil {
+		c.logger.Error.Println(err)
+		return
+	}
+
+	for _, tr := range st.Transactions {
+		// TODO: check transactions.
+		c.node.CheckAndAddTransactionToPool(tr)
 	}
 
 	m.Conn.Write([]byte("pong"))
@@ -168,15 +187,33 @@ func (c *client) broadcastKnownNodes() {
 
 		nodes := c.collectNodesFromRoutingTable()
 
-		p := core.NewSyncNodesMessage(nodes)
+		m := core.NewSyncNodesMessage(nodes)
 
-		pjson, err := p.MarshalJson()
+		mjson, err := m.MarshalJson()
 		if err != nil {
-			continue
+			return
 		}
 
-		c.node.Broadcast(pjson, func([]byte) error { return nil })
+		c.node.Broadcast(mjson, func([]byte) error { return nil })
 	}
+}
+
+// Broadcast transactions pool.
+func (c *client) broadcastTransactionsPool() {
+	// for {
+	// 	time.Sleep(broadcastTransactionsPoolPeriod * time.Second)
+
+	// 	_, trs := c.node.GetTransactionsOfPool()
+
+	// 	m := core.NewSyncTransactionsMessage(trs)
+
+	// 	mjson, err := m.MarshalJson()
+	// 	if err != nil {
+	// 		return
+	// 	}
+
+	// 	c.node.Broadcast(mjson, func([]byte) error { return nil })
+	// }
 }
 
 // Collect nodes from routing table.
@@ -185,6 +222,7 @@ func (c *client) collectNodesFromRoutingTable() []core.RemoteNode {
 
 	_, nodes = c.node.GetNodesOfRoutingTable()
 
+	// Add client itself to []Node.
 	nodes = append(nodes, core.RemoteNode{
 		PublicKey: c.node.Keypair.Public,
 		Address:   c.node.Addr(),

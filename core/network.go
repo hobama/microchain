@@ -40,15 +40,17 @@ type IncommingMessage struct {
 
 // Node ... Represent ourselves.
 type Node struct {
-	Keypair              *KeyPair                // Key pair
-	IP                   string                  // IP address
-	Port                 int                     // Port
-	RoutingTableLock     sync.RWMutex            // Routing table read write lock
-	RoutingTable         map[string]*RemoteNode  // Routing table (public key, node)
-	TransactionsPoolLock sync.RWMutex            // Transactions pool read write lock
-	TransactionsPool     map[string]*Transaction // Transactions pool
-	Listerner            *net.TCPListener        // TCP listener
-	MessageChannel       chan IncommingMessage   // Incomming message
+	Keypair                 *KeyPair                // Key pair
+	IP                      string                  // IP address
+	Port                    int                     // Port
+	RoutingTableLock        sync.RWMutex            // Routing table read write lock
+	RoutingTable            map[string]*RemoteNode  // Routing table (public key, node)
+	TransactionsPoolLock    sync.RWMutex            // Transactions pool read write lock
+	TransactionsPool        map[string]*Transaction // Transactions pool
+	PendingTransactionsLock sync.RWMutex            // Pending transactions lock
+	PendingTransactions     map[string]*Transaction // Pending transactions
+	Listerner               *net.TCPListener        // TCP listener
+	MessageChannel          chan IncommingMessage   // Incomming message
 }
 
 // NewNode ... Generate new node.
@@ -59,15 +61,17 @@ func NewNode(ip string, port int) (*Node, error) {
 	}
 
 	return &Node{
-		Keypair:              kp,
-		IP:                   ip,
-		Port:                 port,
-		RoutingTableLock:     sync.RWMutex{},
-		RoutingTable:         make(map[string]*RemoteNode),
-		TransactionsPoolLock: sync.RWMutex{},
-		TransactionsPool:     make(map[string]*Transaction),
-		Listerner:            new(net.TCPListener),
-		MessageChannel:       make(chan IncommingMessage),
+		Keypair:                 kp,
+		IP:                      ip,
+		Port:                    port,
+		RoutingTableLock:        sync.RWMutex{},
+		RoutingTable:            make(map[string]*RemoteNode),
+		TransactionsPoolLock:    sync.RWMutex{},
+		TransactionsPool:        make(map[string]*Transaction),
+		PendingTransactionsLock: sync.RWMutex{},
+		PendingTransactions:     make(map[string]*Transaction),
+		Listerner:               new(net.TCPListener),
+		MessageChannel:          make(chan IncommingMessage),
 	}, nil
 }
 
@@ -165,7 +169,7 @@ func (n *Node) processPacket(packetch chan Packet) {
 
 // Send ... Send message to given node.
 func (n *Node) Send(address string, data []byte, handleCallback func([]byte) error) error {
-	addr, err := n.TCPAddr()
+	addr, err := net.ResolveTCPAddr("tcp", address)
 	if err != nil {
 		return err
 	}
@@ -302,7 +306,7 @@ func (n *Node) GetTransactionByID(id []byte) (bool, Transaction) {
 // GetTransactionsOfPool ... Get transactions of transactions pool.
 func (n *Node) GetTransactionsOfPool() (int, TransactionSlice) {
 	n.TransactionsPoolLock.RLock()
-	n.TransactionsPoolLock.RUnlock()
+	defer n.TransactionsPoolLock.RUnlock()
 
 	var trs TransactionSlice
 
@@ -335,6 +339,58 @@ func (n *Node) RemoveTransactionByID(id []byte) {
 	defer n.TransactionsPoolLock.Unlock()
 
 	delete(n.TransactionsPool, Base58Encode(id))
+}
+
+// GetPendingTransactionByID ... Get pending transaction by id.
+func (n *Node) GetPendingTransactionByID(id []byte) (bool, Transaction) {
+	n.PendingTransactionsLock.RLock()
+	defer n.PendingTransactionsLock.RUnlock()
+
+	tr := n.PendingTransactions[Base58Encode(id)]
+
+	if tr == nil {
+		return false, Transaction{}
+	}
+
+	return true, *tr
+}
+
+// GetPendingTransactions ... Get pending transactions.
+func (n *Node) GetPendingTransactions() (int, TransactionSlice) {
+	n.PendingTransactionsLock.RLock()
+	defer n.PendingTransactionsLock.RUnlock()
+
+	var trs TransactionSlice
+
+	// We should collect transactions in order.
+	for _, tr := range n.PendingTransactions {
+		trs = append(trs, *tr)
+	}
+
+	// Sort by time.
+	sort.Sort(trs)
+
+	return len(trs), trs
+}
+
+// IsInPendingTransactions ... Is in pending transactions.
+func (n *Node) IsInPendingTransactions(id []byte) bool {
+	n.PendingTransactionsLock.RLock()
+	defer n.PendingTransactionsLock.RUnlock()
+
+	if n.PendingTransactions[Base58Encode(id)] != nil {
+		return true
+	}
+
+	return false
+}
+
+// RemovePendingTransactionByID ... Remove pending transaction by id.
+func (n *Node) RemovePendingTransactionByID(id []byte) {
+	n.PendingTransactionsLock.Lock()
+	defer n.PendingTransactionsLock.Unlock()
+
+	delete(n.PendingTransactions, Base58Encode(id))
 }
 
 // MarshalJson ... Serialize RemoteNode into Json.

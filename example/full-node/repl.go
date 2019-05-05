@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"regexp"
-	"strconv"
 	"strings"
 
 	"github.com/bosoncat/microchain/core"
@@ -61,13 +60,17 @@ func (c *client) repl() {
 
 		} else if sendTransactionOpt.MatchString(input) {
 			// Send transaction to given node.
-			b, msg := checkSendTransactionCommand(input)
+			b, msg, id, _ := checkSendTransactionCommand(input)
 			if !b {
 				c.terminal <- msg
 				continue
 			}
 
-			// TODO:
+			b, _ = c.node.GetNodeByPublicKey(id)
+			if !b {
+				c.terminal <- fmt.Sprintf("Unknown node: %s\n", core.Base58Encode(id))
+				continue
+			}
 
 		} else if queryNodesOpt.MatchString(input) {
 			// Query pending jobs.
@@ -97,7 +100,7 @@ func (c *client) repl() {
 }
 
 func (c *client) pingNode(addr string, pingNodeCallback func([]byte) error) error {
-	p := core.NewPingMessage(c.node.Keypair.Public, c.node.IP+":"+strconv.Itoa(c.node.Port))
+	p := core.NewPingMessage(c.node.Keypair.Public, c.node.Addr())
 	pjson, err := p.MarshalJson()
 	if err != nil {
 		return err
