@@ -22,6 +22,8 @@ var resp = map[byte]func(core.IncommingMessage, *client){
 	core.SyncNodes: syncNodesResp,
 
 	core.SyncTransactions: syncTransactionsResp,
+
+	core.SendTransaction: sendTransactionResp,
 }
 
 // Generate new client.
@@ -86,7 +88,6 @@ func pingResp(m core.IncommingMessage, c *client) {
 
 	// Test if node is existed in routing table, if not, add it into routing table.
 	if !c.node.IsInRoutingTable(p.PublicKey) {
-
 		c.node.CheckAndAddNodeToRoutingTable(core.RemoteNode{
 			PublicKey:  p.PublicKey,
 			Address:    p.Address,
@@ -143,6 +144,24 @@ func syncTransactionsResp(m core.IncommingMessage, c *client) {
 	}
 
 	m.Conn.Write([]byte("pong"))
+}
+
+// Callback for send transaction.
+func sendTransactionResp(m core.IncommingMessage, c *client) {
+	var st core.SendTransactionData
+
+	err := st.UnmarshalJson(m.Content.Data)
+	if err != nil {
+		c.logger.Error.Println(err)
+		return
+	}
+
+	t := st.Transaction
+
+	if c.node.VerifyTransaction(t) {
+		// Add it into transactions pool
+		c.node.CheckAndAddTransactionToPool(t)
+	}
 }
 
 // Run web server.

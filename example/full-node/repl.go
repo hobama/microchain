@@ -57,22 +57,40 @@ func (c *client) repl() {
 		} else if joinNetworkOpt.MatchString(input) {
 			// Join p2p network through node.
 			// TODO: I don't want to implement this block now. Because I have very limited time to submit my final project.
-
-		} else if sendTransactionOpt.MatchString(input) {
-			// Send transaction to given node.
-			b, msg, id, _ := checkSendTransactionCommand(input)
+		} else if queryTransactionsOpt.MatchString(input) {
+			b, msg := checkQueryTransactionsCommand(input)
 			if !b {
 				c.terminal <- msg
 				continue
 			}
 
-			b, _ = c.node.GetNodeByPublicKey(id)
+			_, ts := c.node.GetTransactionsOfPool()
+
+			for _, t := range ts {
+				c.terminal <- fmt.Sprintf("ID %s From: %s To: %s Data: %s\n", core.Base58Encode(t.ID()),
+					core.Base58Encode(t.RequesterPK()),
+					core.Base58Encode(t.RequesteePK()),
+					string(t.Meta))
+			}
+		} else if sendTransactionOpt.MatchString(input) {
+			// Send transaction to given node.
+			b, msg, _, _ := checkSendTransactionCommand(input)
 			if !b {
-				c.terminal <- fmt.Sprintf("Unknown node: %s\n", core.Base58Encode(id))
+				c.terminal <- msg
 				continue
 			}
 
-		} else if queryNodesOpt.MatchString(input) {
+			// TODO: c.sendTransaction(id, data)
+		} else if genesisOpt.MatchString(input) {
+			// Generate genesis transaction.
+			b, msg, data := checkGenesisCommand(input)
+			if !b {
+				c.terminal <- msg
+				continue
+			}
+
+			c.broadcastGenesisTransaction(data)
+		} else if queryPendingJobsOpt.MatchString(input) {
 			// Query pending jobs.
 			b, msg := checkQueryPendingCommand(input)
 			if !b {
@@ -81,6 +99,14 @@ func (c *client) repl() {
 			}
 
 			// TODO:
+			_, ts := c.node.GetPendingTransactions()
+
+			for _, t := range ts {
+				c.terminal <- fmt.Sprintf("ID %s From: %s To: %s Data: %s\n", core.Base58Encode(t.ID()),
+					core.Base58Encode(t.RequesterPK()),
+					core.Base58Encode(t.RequesteePK()),
+					string(t.Meta))
+			}
 
 		} else if confirmReqOpt.MatchString(input) {
 			b, msg, _ := checkConfirmCommand(input)
@@ -121,6 +147,17 @@ func (c *client) pingNodeCallBack(data []byte) error {
 	}
 
 	return nil
+}
+
+func (c *client) broadcastGenesisTransaction(data string) {
+
+	t := c.node.NewGenesisTransaction([]byte(data))
+
+	m := core.NewSendTransactionMessage(t)
+
+	mjson, _ := m.MarshalJson()
+
+	c.node.Broadcast(mjson, func([]byte) error { return nil })
 }
 
 func (c *client) printLoop() {

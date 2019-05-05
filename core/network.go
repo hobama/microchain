@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strconv"
 	"sync"
+	"time"
 )
 
 const (
@@ -24,6 +25,33 @@ type RemoteNode struct {
 // Addr ... Get address of remote node.
 func (rn *RemoteNode) Addr() string {
 	return rn.Address
+}
+
+// MarshalJson ... Serialize RemoteNode into Json.
+func (rn RemoteNode) MarshalJson() ([]byte, error) {
+	return json.Marshal(rn)
+}
+
+// UnmarshalJson ... Read RemoteNode from Json.
+func (rn *RemoteNode) UnmarshalJson(data []byte) error {
+	return json.Unmarshal(data, &rn)
+}
+
+// EqualWith ... Test if two remote nodes are equal.
+func (rn RemoteNode) EqualWith(temp RemoteNode) bool {
+	if !bytes.Equal(rn.PublicKey, temp.PublicKey) {
+		return false
+	}
+
+	if rn.Address != temp.Address {
+		return false
+	}
+
+	if rn.Lastseen != temp.Lastseen {
+		return false
+	}
+
+	return true
 }
 
 // Packet ... Received packect.
@@ -121,6 +149,12 @@ func (n *Node) PublicKey() []byte {
 	kp := n.Keypair
 
 	return kp.Public
+}
+
+// Sign ... Sign
+func (n *Node) Sign(data []byte) []byte {
+	sig, _ := n.Keypair.Sign(data)
+	return sig
 }
 
 // UpdateKeyPair ... Update key pair for node.
@@ -282,55 +316,36 @@ func (n *Node) RemoveNodeByPublicKey(pk []byte) {
 }
 
 // CheckAndAddTransactionToPool ... Check and add transaction to pool.
-func (n *Node) CheckAndAddTransactionToPool(tr Transaction) {
+func (n *Node) CheckAndAddTransactionToPool(t Transaction) {
 	n.TransactionsPoolLock.Lock()
 	defer n.TransactionsPoolLock.Unlock()
 
-	if n.TransactionsPool[Base58Encode(tr.Header.TransactionID)] != nil {
+	if n.TransactionsPool[Base58Encode(t.ID())] != nil {
 		return
 	}
 
-	n.TransactionsPool[Base58Encode(tr.Header.TransactionID)] = &tr
+	n.TransactionsPool[Base58Encode(t.ID())] = &t
 }
 
 // VerifyTransaction ... Verify a given transaction,
-func (n *Node) VerifyTransaction(tr Transaction) bool {
-	if bytes.Equal(tr.Header.TransactionID, tr.Header.PrevTransactionID) {
+func (n *Node) VerifyTransaction(t Transaction) bool {
+	if bytes.Equal(t.ID(), t.PreviousID()) {
 		// This is genesis transaction.
-		// TODO:
+		if t.Accepted() != 1 || t.Rejected() != 0 {
+			return false
+		}
 
-	} else {
-		// This is not genesis transaction.
-		// TODO:
-		// t, prev := n.PrevTransactionOf(tr)
-		// if !t {
-		// 	return false
-		// }
-
+		return t.VerifyTransactionID() && t.VerifyRequesterSig() && t.VerifyRequesteeSig()
 	}
-	// type TXOutput struct {
-	// 	Accepted          int    `json:"accepted"`
-	// 	Rejected          int    `json:"rejected"`
-	// 	NextPublicKeyHash []byte `json:"next_pk_hash"`
+	//else {
+	// This is not genesis transaction.
+	// TODO:
+	// t, prev := n.PrevTransactionOf(tr)
+	// if !t {
+	// 	return false
 	// }
 
-	// // TransactionHeader ...
-	// type TransactionHeader struct {
-	// 	TransactionID      []byte `json:"id"`            // SHA256(requesterPK, requesteePK, timestamp)
-	// 	Timestamp          int    `json:"timestamp"`     // Unix timestamp
-	// 	PrevTransactionID  []byte `json:"prev_id"`       // Previous transaction ID
-	// 	RequesterPublicKey []byte `json:"requester_pk"`  // Requester public key
-	// 	RequesterSignature []byte `json:"requester_sig"` // Requester signature
-	// 	RequesteePublicKey []byte `json:"requestee_pk"`  // Requestee public key
-	// 	RequesteeSignature []byte `json:"requestee_sig"` // Requestee signature
-	// }
-
-	// // Transaction ...
-	// type Transaction struct {
-	// 	Header TransactionHeader `json:"header"` // Header
-	// 	Meta   []byte            `json:"meta"`   // Meta data field
-	// 	Output TXOutput          `json:"output"` // TXOutput
-	// }
+	//}
 
 	return false
 }
@@ -340,7 +355,7 @@ func (n *Node) PrevTransactionOf(tr Transaction) (bool, Transaction) {
 	n.ChainLock.RLock()
 	defer n.ChainLock.RUnlock()
 
-	if t, tr := n.Chain.GetTransactionByID(tr.Header.PrevTransactionID); t {
+	if t, tr := n.Chain.GetTransactionByID(tr.PreviousID()); t {
 		return true, tr
 	}
 
@@ -463,29 +478,31 @@ func (n *Node) RemovePendingTransactionByID(id []byte) {
 	delete(n.PendingTransactions, Base58Encode(id))
 }
 
-// MarshalJson ... Serialize RemoteNode into Json.
-func (rn RemoteNode) MarshalJson() ([]byte, error) {
-	return json.Marshal(rn)
-}
+// NewGenesisTransaction ... Generate new genesis transaction.
+func (n *Node) NewGenesisTransaction(data []byte) Transaction {
+	timestamp := int(time.Now().Unix())
+	timestampByte := UInt64ToBytes(uint64(timestamp))
+	id := SHA256(JoinBytes(n.PublicKey(), n.PublicKey(), timestampByte))
+	sig := n.Sign(SHA256(data))
 
-// UnmarshalJson ... Read RemoteNode from Json.
-func (rn *RemoteNode) UnmarshalJson(data []byte) error {
-	return json.Unmarshal(data, &rn)
-}
-
-// EqualWith ... Test if two remote nodes are equal.
-func (rn RemoteNode) EqualWith(temp RemoteNode) bool {
-	if !bytes.Equal(rn.PublicKey, temp.PublicKey) {
-		return false
+	h := TransactionHeader{
+		TransactionID:      id,
+		Timestamp:          timestamp,
+		PrevTransactionID:  id,
+		RequesterPublicKey: n.PublicKey(),
+		RequesterSignature: sig,
+		RequesteePublicKey: n.PublicKey(),
+		RequesteeSignature: sig,
 	}
 
-	if rn.Address != temp.Address {
-		return false
+	txo := TXOutput{
+		Accepted: 1,
+		Rejected: 0,
 	}
 
-	if rn.Lastseen != temp.Lastseen {
-		return false
+	return Transaction{
+		Header: h,
+		Meta:   data,
+		Output: txo,
 	}
-
-	return true
 }

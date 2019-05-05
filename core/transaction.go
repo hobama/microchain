@@ -132,6 +132,16 @@ func (t Transaction) RequesteeSig() []byte {
 	return t.Header.RequesteeSignature
 }
 
+// Accepted ... Get accepted number of transaction.
+func (t Transaction) Accepted() int {
+	return t.Output.Accepted
+}
+
+// Rejected ... Get rejected number of transaction.
+func (t Transaction) Rejected() int {
+	return t.Output.Rejected
+}
+
 // Hash ... Get SHA256 sum of transaction meta field.
 func (t Transaction) Hash() []byte {
 	return SHA256(t.Meta)
@@ -190,11 +200,9 @@ func (t Transaction) VerifyRequesteeSig() bool {
 // TransactionSlice ...
 type TransactionSlice []Transaction
 
-func (ts TransactionSlice) Len() int      { return len(ts) }
-func (ts TransactionSlice) Swap(i, j int) { ts[i], ts[j] = ts[j], ts[i] }
-func (ts TransactionSlice) Less(i, j int) bool {
-	return ts[i].Header.Timestamp < ts[j].Header.Timestamp
-}
+func (ts TransactionSlice) Len() int           { return len(ts) }
+func (ts TransactionSlice) Swap(i, j int)      { ts[i], ts[j] = ts[j], ts[i] }
+func (ts TransactionSlice) Less(i, j int) bool { return ts[i].Header.Timestamp < ts[j].Header.Timestamp }
 
 // TODO: We have 2 ways to represent transactions in a block
 // (1) TransactionSlice: Consume lower memory, but low performace

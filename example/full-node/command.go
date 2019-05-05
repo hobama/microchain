@@ -13,7 +13,9 @@ var queryNodesOpt = regexp.MustCompile(`nodes`)
 var pingNodeOpt = regexp.MustCompile(`ping`)
 var joinNetworkOpt = regexp.MustCompile(`join`)
 var sendTransactionOpt = regexp.MustCompile(`tran`)
+var genesisOpt = regexp.MustCompile(`genesis`)
 var queryPendingJobsOpt = regexp.MustCompile(`pending`)
+var queryTransactionsOpt = regexp.MustCompile(`transactions`)
 var confirmReqOpt = regexp.MustCompile(`confirm`)
 
 func checkQueryNodesCommand(s string) (bool, string) {
@@ -49,6 +51,14 @@ func checkQueryPendingCommand(s string) (bool, string) {
 	return true, ""
 }
 
+func checkQueryTransactionsCommand(s string) (bool, string) {
+	if s != "transactions" {
+		return false, fmt.Sprintf("Unknown command: %s, do you mean: transactions ?\n", s)
+	}
+
+	return true, ""
+}
+
 func checkSendTransactionCommand(s string) (bool, string, []byte, string) {
 	if !strings.HasPrefix(s, "tran") {
 		return false, fmt.Sprintf("Unknown command: %s, do you mean: tran ?\n", s), nil, ""
@@ -70,6 +80,20 @@ func checkSendTransactionCommand(s string) (bool, string, []byte, string) {
 	}
 
 	return true, "", id, tokens[1]
+}
+
+func checkGenesisCommand(s string) (bool, string, string) {
+	if !strings.HasPrefix(s, "genesis") {
+		return false, fmt.Sprintf("Unknown command: %s, do you mean: genesis ?\n", s), ""
+	}
+
+	tokens := strings.Fields(s)
+
+	if len(tokens) != 2 {
+		return false, fmt.Sprintf("Invalid genesis\n"), ""
+	}
+
+	return true, "", tokens[1]
 }
 
 func checkConfirmCommand(s string) (bool, string, []string) {

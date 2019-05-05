@@ -104,8 +104,8 @@ func (st *SendTransactionData) UnmarshalJson(data []byte) error {
 }
 
 // NewSendTransactionMessage ... Generate new send transaction message.
-func NewSendTransactionMessage(tr Transaction) Message {
-	data := SendTransactionData{tr}
+func NewSendTransactionMessage(t Transaction) Message {
+	data := SendTransactionData{t}
 
 	dataJSON, _ := data.MarshalJson()
 
