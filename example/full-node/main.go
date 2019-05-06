@@ -4,7 +4,7 @@ import (
 	"flag"
 	"os"
 
-	"github.com/bosoncat/microchain/core"
+	"github.com/vgxbj/microchain/core"
 )
 
 var nodeIPOpt = flag.String("addr", "localhost", "ip address that node runs on")
