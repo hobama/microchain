@@ -30,7 +30,8 @@ func (c *client) repl() {
 			c.terminal <- fmt.Sprintf("Currently, %d nodes in routing table.\n", len(c.node.RoutingTable))
 
 			for k, n := range c.node.RoutingTable {
-				c.terminal <- fmt.Sprintf("# %s Lastseen: %d Public key: %s\n", n.Address, n.Lastseen, k)
+				c.terminal <- "---\n"
+				c.terminal <- fmt.Sprintf("ID: %s\nAddress: %s\nLastseen: %d\nPublic key: %s\n", n.Addr(), n.Address, n.Lastseen, k)
 			}
 		} else if pingNodeOpt.MatchString(input) {
 			// Ping node.
@@ -64,13 +65,16 @@ func (c *client) repl() {
 				continue
 			}
 
-			_, ts := c.node.GetTransactionsOfPool()
+			n, ts := c.node.GetTransactionsOfPool()
+
+			c.terminal <- fmt.Sprintf("Currently, there are %d transactions\n", n)
 
 			for _, t := range ts {
-				c.terminal <- fmt.Sprintf("ID %s From: %s To: %s Data: %s\n", core.Base58Encode(t.ID()),
+				c.terminal <- "---\n"
+				c.terminal <- fmt.Sprintf("ID %s\nFrom: %s\nTo: %s\nData: %s\nTimestamp: %d\n", core.Base58Encode(t.ID()),
 					core.Base58Encode(t.RequesterPK()),
 					core.Base58Encode(t.RequesteePK()),
-					string(t.Meta))
+					string(t.Meta), t.Timestamp())
 			}
 		} else if sendTransactionOpt.MatchString(input) {
 			// Send transaction to given node.
@@ -81,11 +85,20 @@ func (c *client) repl() {
 			}
 
 			// TODO: c.sendTransaction(id, data)
+			if c.node.PrevTransaction() == nil {
+				c.terminal <- "Please generate genesis transaction first\n"
+				continue
+			}
 		} else if genesisOpt.MatchString(input) {
 			// Generate genesis transaction.
 			b, msg, data := checkGenesisCommand(input)
 			if !b {
 				c.terminal <- msg
+				continue
+			}
+
+			if c.node.PrevTransaction() != nil {
+				c.terminal <- "You cannot generate two genesis transaction\n"
 				continue
 			}
 
@@ -102,7 +115,8 @@ func (c *client) repl() {
 			_, ts := c.node.GetPendingTransactions()
 
 			for _, t := range ts {
-				c.terminal <- fmt.Sprintf("ID %s From: %s To: %s Data: %s\n", core.Base58Encode(t.ID()),
+				c.terminal <- "---\n"
+				c.terminal <- fmt.Sprintf("ID %s\nFrom: %s\nTo: %s\nData: %s\n", core.Base58Encode(t.ID()),
 					core.Base58Encode(t.RequesterPK()),
 					core.Base58Encode(t.RequesteePK()),
 					string(t.Meta))
@@ -126,7 +140,7 @@ func (c *client) repl() {
 }
 
 func (c *client) pingNode(addr string, pingNodeCallback func([]byte) error) error {
-	p := core.NewPingMessage(c.node.Keypair.Public, c.node.Addr())
+	p := core.NewPingMessage(c.node.PublicKey(), c.node.Addr())
 	pjson, err := p.MarshalJson()
 	if err != nil {
 		return err
@@ -152,6 +166,8 @@ func (c *client) pingNodeCallBack(data []byte) error {
 func (c *client) broadcastGenesisTransaction(data string) {
 
 	t := c.node.NewGenesisTransaction([]byte(data))
+
+	c.node.PreviousTransaction = &t
 
 	m := core.NewSendTransactionMessage(t)
 

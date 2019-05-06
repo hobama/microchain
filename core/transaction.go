@@ -197,12 +197,17 @@ func (t Transaction) VerifyRequesteeSig() bool {
 	return VerifySignature(t.RequesteePK(), t.RequesteeSig(), t.Hash())
 }
 
+// IsGenesisTransaction ... Test if it's genesis transaction.
+func (t Transaction) IsGenesisTransaction() bool {
+	return bytes.Equal(t.ID(), t.PreviousID())
+}
+
 // TransactionSlice ...
 type TransactionSlice []Transaction
 
 func (ts TransactionSlice) Len() int           { return len(ts) }
 func (ts TransactionSlice) Swap(i, j int)      { ts[i], ts[j] = ts[j], ts[i] }
-func (ts TransactionSlice) Less(i, j int) bool { return ts[i].Header.Timestamp < ts[j].Header.Timestamp }
+func (ts TransactionSlice) Less(i, j int) bool { return ts[i].Timestamp() < ts[j].Timestamp() }
 
 // TODO: We have 2 ways to represent transactions in a block
 // (1) TransactionSlice: Consume lower memory, but low performace
@@ -211,7 +216,7 @@ func (ts TransactionSlice) Less(i, j int) bool { return ts[i].Header.Timestamp <
 // Contains ... Test if given tansaction is contained in the trs.
 func (ts TransactionSlice) Contains(tr Transaction) (bool, int) {
 	for i, t := range ts {
-		if bytes.Equal(tr.Header.TransactionID, t.Header.TransactionID) {
+		if bytes.Equal(tr.ID(), t.ID()) {
 			return true, i
 		}
 	}
@@ -222,7 +227,7 @@ func (ts TransactionSlice) Contains(tr Transaction) (bool, int) {
 // ContainsByID ... Test if transaction with given id is contained in the trs.
 func (ts TransactionSlice) ContainsByID(id []byte) (bool, int) {
 	for i, t := range ts {
-		if bytes.Equal(id, t.Header.TransactionID) {
+		if bytes.Equal(id, t.ID()) {
 			return true, i
 		}
 	}
@@ -274,7 +279,7 @@ func (ts *TransactionSlice) UnmarshalJson(data []byte) error {
 // GetTransactionByID ... Get transaction by transaction id.
 func (ts TransactionSlice) GetTransactionByID(id []byte) (bool, Transaction) {
 	for _, tr := range ts {
-		if bytes.Equal(tr.Header.TransactionID, id) {
+		if bytes.Equal(tr.ID(), id) {
 			return true, tr
 		}
 	}
@@ -292,7 +297,7 @@ func DiffTransactions(tl1, tl2 TransactionSlice) TransactionSlice {
 
 		for j := lastj; j < len(tl2); j++ {
 			// We assume tl1 and tl2 are sorted, so we could diff them in O(n).
-			if bytes.Equal(StripBytes(t1.Header.TransactionID, 0), StripBytes(tl2[j].Header.TransactionID, 0)) {
+			if bytes.Equal(StripBytes(t1.ID(), 0), StripBytes(tl2[j].ID(), 0)) {
 				found = true
 				lastj = j
 				break

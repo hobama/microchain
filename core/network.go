@@ -77,6 +77,7 @@ type Node struct {
 	TransactionsPool        map[string]*Transaction // Transactions pool
 	PendingTransactionsLock sync.RWMutex            // Pending transactions lock
 	PendingTransactions     map[string]*Transaction // Pending transactions
+	PreviousTransaction     *Transaction            // Previous transaction
 	ChainLock               sync.RWMutex            // Blockchain lock
 	Chain                   Blockchain              // Blockchain
 	Listerner               *net.TCPListener        // TCP listener
@@ -100,6 +101,7 @@ func NewNode(ip string, port int) (*Node, error) {
 		TransactionsPool:        make(map[string]*Transaction),
 		PendingTransactionsLock: sync.RWMutex{},
 		PendingTransactions:     make(map[string]*Transaction),
+		PreviousTransaction:     nil,
 		ChainLock:               sync.RWMutex{},
 		Chain:                   Blockchain{},
 		Listerner:               new(net.TCPListener),
@@ -329,7 +331,7 @@ func (n *Node) CheckAndAddTransactionToPool(t Transaction) {
 
 // VerifyTransaction ... Verify a given transaction,
 func (n *Node) VerifyTransaction(t Transaction) bool {
-	if bytes.Equal(t.ID(), t.PreviousID()) {
+	if t.IsGenesisTransaction() {
 		// This is genesis transaction.
 		if t.Accepted() != 1 || t.Rejected() != 0 {
 			return false
@@ -337,17 +339,15 @@ func (n *Node) VerifyTransaction(t Transaction) bool {
 
 		return t.VerifyTransactionID() && t.VerifyRequesterSig() && t.VerifyRequesteeSig()
 	}
-	//else {
 	// This is not genesis transaction.
 	// TODO:
-	// t, prev := n.PrevTransactionOf(tr)
-	// if !t {
-	// 	return false
-	// }
-
-	//}
 
 	return false
+}
+
+// PrevTransaction ... Get previous transaction.
+func (n *Node) PrevTransaction() *Transaction {
+	return n.PreviousTransaction
 }
 
 // PrevTransactionOf ... Get previoud transaction of given transaction.

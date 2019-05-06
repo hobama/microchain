@@ -61,6 +61,9 @@ func newClient(ip string, nodePort, webPort int, l *core.Logger) (*client, error
 	// broadcast nodes.
 	go c.broadcastKnownNodes()
 
+	// broadcast transactions
+	go c.broadcastTransactionsPool()
+
 	return c, nil
 }
 
@@ -219,20 +222,20 @@ func (c *client) broadcastKnownNodes() {
 
 // Broadcast transactions pool.
 func (c *client) broadcastTransactionsPool() {
-	// for {
-	// 	time.Sleep(broadcastTransactionsPoolPeriod * time.Second)
+	for {
+		time.Sleep(broadcastTransactionsPoolPeriod * time.Second)
 
-	// 	_, trs := c.node.GetTransactionsOfPool()
+		_, ts := c.node.GetTransactionsOfPool()
 
-	// 	m := core.NewSyncTransactionsMessage(trs)
+		m := core.NewSyncTransactionsMessage(ts)
 
-	// 	mjson, err := m.MarshalJson()
-	// 	if err != nil {
-	// 		return
-	// 	}
+		mjson, err := m.MarshalJson()
+		if err != nil {
+			return
+		}
 
-	// 	c.node.Broadcast(mjson, func([]byte) error { return nil })
-	// }
+		c.node.Broadcast(mjson, func([]byte) error { return nil })
+	}
 }
 
 // Collect nodes from routing table.
