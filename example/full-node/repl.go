@@ -78,7 +78,7 @@ func (c *client) repl() {
 			}
 		} else if sendTransactionOpt.MatchString(input) {
 			// Send transaction to given node.
-			b, msg, _, _ := checkSendTransactionCommand(input)
+			b, msg, id, data := checkSendTransactionCommand(input)
 			if !b {
 				c.terminal <- msg
 				continue
@@ -89,6 +89,10 @@ func (c *client) repl() {
 				c.terminal <- "Please generate genesis transaction first\n"
 				continue
 			}
+
+			t := c.newPendingTransaction(id, data)
+
+			c.sendPendingTransaction(t)
 		} else if genesisOpt.MatchString(input) {
 			// Generate genesis transaction.
 			b, msg, data := checkGenesisCommand(input)
@@ -123,14 +127,14 @@ func (c *client) repl() {
 			}
 
 		} else if confirmReqOpt.MatchString(input) {
-			b, msg, _ := checkConfirmCommand(input)
+			b, msg, id := checkConfirmCommand(input)
 			if !b {
 				c.terminal <- msg
 				continue
 			}
 
 			// TODO:
-
+			c.confirmPendingTransaction(id)
 		} else if input == "" {
 			// Do nothing, intended leaving blank.
 		} else {
@@ -161,6 +165,25 @@ func (c *client) pingNodeCallBack(data []byte) error {
 	}
 
 	return nil
+}
+
+// Send pending transaction.
+func (c *client) sendPendingTransaction(t core.Transaction) {
+	p := core.NewPendingTransactionMessage(t)
+
+	pjson, err := p.MarshalJson()
+	if err != nil {
+		return
+	}
+
+	b, target := c.node.GetNodeByPublicKey(t.RequesteePK())
+	if !b {
+		return
+	}
+
+	_ = c.node.Send(target.Addr(), pjson, func([]byte) error { return nil })
+
+	return
 }
 
 func (c *client) broadcastGenesisTransaction(data string) {

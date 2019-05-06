@@ -24,6 +24,8 @@ var resp = map[byte]func(core.IncommingMessage, *client){
 	core.SyncTransactions: syncTransactionsResp,
 
 	core.SendTransaction: sendTransactionResp,
+
+	core.PendingTransaction: pendingTransactionResp,
 }
 
 // Generate new client.
@@ -162,8 +164,30 @@ func sendTransactionResp(m core.IncommingMessage, c *client) {
 	t := st.Transaction
 
 	if c.node.VerifyTransaction(t) {
+
 		// Add it into transactions pool
 		c.node.CheckAndAddTransactionToPool(t)
+	}
+}
+
+// Callback for pending transaction.
+func pendingTransactionResp(m core.IncommingMessage, c *client) {
+	var pt core.PendingTransactionData
+
+	err := pt.UnmarshalJson(m.Content.Data)
+	if err != nil {
+		c.logger.Error.Println(err)
+		return
+	}
+
+	t := pt.Transaction
+
+	if !c.node.VerifyPendingTransaction(t) {
+		return
+	}
+
+	if !c.node.IsInPendingTransactions(t.ID()) {
+		c.node.CheckAndAddPendingTransaction(t)
 	}
 }
 
@@ -252,6 +276,46 @@ func (c *client) collectNodesFromRoutingTable() []core.RemoteNode {
 	})
 
 	return nodes
+}
+
+// Generate new pending transaction.
+func (c *client) newPendingTransaction(id []byte, data string) core.Transaction {
+	time := int(time.Now().Unix())
+
+	timeByte := core.UInt64ToBytes(uint64(time))
+
+	h := core.TransactionHeader{
+		TransactionID:      core.SHA256(core.JoinBytes(c.node.PublicKey(), id, timeByte)),
+		Timestamp:          time,
+		PrevTransactionID:  c.node.PrevTransaction().ID(),
+		RequesterPublicKey: c.node.PublicKey(),
+		RequesterSignature: c.node.Sign(core.SHA256([]byte(data))),
+		RequesteePublicKey: id,
+	}
+
+	meta := []byte(data)
+
+	txo := c.node.PrevTransaction().Out()
+
+	return core.Transaction{Header: h, Meta: meta, Output: txo}
+}
+
+func (c *client) confirmPendingTransaction(id []byte) {
+	b, t := c.node.GetPendingTransactionByID(id)
+	if !b {
+		return
+	}
+
+	t.Header.RequesteeSignature = c.node.Sign(core.SHA256(t.Meta))
+
+	m := core.NewSendTransactionMessage(t)
+
+	mjson, err := m.MarshalJson()
+	if err != nil {
+		return
+	}
+
+	c.node.Broadcast(mjson, func([]byte) error { return nil })
 }
 
 func (c *client) indexHandler(w http.ResponseWriter, r *http.Request) {

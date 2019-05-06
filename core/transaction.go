@@ -132,6 +132,11 @@ func (t Transaction) RequesteeSig() []byte {
 	return t.Header.RequesteeSignature
 }
 
+// Out ... Get output field of transaction.
+func (t Transaction) Out() TXOutput {
+	return t.Output
+}
+
 // Accepted ... Get accepted number of transaction.
 func (t Transaction) Accepted() int {
 	return t.Output.Accepted

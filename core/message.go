@@ -13,8 +13,9 @@ const (
 	Join                 byte = 0x02 // Join network
 	SyncNodes            byte = 0x03 // Sync routing table
 	SendTransaction      byte = 0x04 // Send transaction to given node
-	BroadcastTransaction byte = 0x05 // Broadcast transaction by requestee node
-	SyncTransactions     byte = 0x06 // Sync transactions
+	PendingTransaction   byte = 0x05 // Send pending transaction
+	BroadcastTransaction byte = 0x06 // Broadcast transaction by requestee node
+	SyncTransactions     byte = 0x07 // Sync transactions
 )
 
 // PingData ... Ping data.
@@ -98,7 +99,7 @@ func (st SendTransactionData) MarshalJson() ([]byte, error) {
 	return json.Marshal(st)
 }
 
-// Read SendTransactionData from Json.
+// UnmarshalJson ... Read SendTransactionData from Json.
 func (st *SendTransactionData) UnmarshalJson(data []byte) error {
 	return json.Unmarshal(data, &st)
 }
@@ -110,6 +111,39 @@ func NewSendTransactionMessage(t Transaction) Message {
 	dataJSON, _ := data.MarshalJson()
 
 	return Message{Type: SendTransaction, Data: dataJSON}
+}
+
+// PendingTransactionData ... Pending transaction.
+type PendingTransactionData struct {
+	Transaction `json:"transaction"`
+}
+
+// EqualWith ... Test if two PendingTransactionData are equal.
+func (pt PendingTransactionData) EqualWith(temp PendingTransactionData) bool {
+	if !pt.Transaction.EqualWith(temp.Transaction) {
+		return false
+	}
+
+	return true
+}
+
+// MarshalJson ... Serialize PendingTransactionData into Json.
+func (pt PendingTransactionData) MarshalJson() ([]byte, error) {
+	return json.Marshal(pt)
+}
+
+// UnmarshalJson ... Read PendingTransactionData from Json.
+func (pt *PendingTransactionData) UnmarshalJson(data []byte) error {
+	return json.Unmarshal(data, &pt)
+}
+
+// NewPendingTransactionMessage ... Generate new pending transaction message.
+func NewPendingTransactionMessage(t Transaction) Message {
+	data := PendingTransactionData{t}
+
+	dataJSON, _ := data.MarshalJson()
+
+	return Message{Type: PendingTransaction, Data: dataJSON}
 }
 
 // SyncTransactionsData ... Sync transactions.

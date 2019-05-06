@@ -3,6 +3,7 @@ package core
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net"
 	"sort"
 	"strconv"
@@ -148,9 +149,7 @@ func (n *Node) TCPAddr() (*net.TCPAddr, error) {
 
 // PublicKey ... Get public key of node.
 func (n *Node) PublicKey() []byte {
-	kp := n.Keypair
-
-	return kp.Public
+	return n.Keypair.Public
 }
 
 // Sign ... Sign
@@ -329,7 +328,7 @@ func (n *Node) CheckAndAddTransactionToPool(t Transaction) {
 	n.TransactionsPool[Base58Encode(t.ID())] = &t
 }
 
-// VerifyTransaction ... Verify a given transaction,
+// VerifyTransaction ... Verify a given transaction.
 func (n *Node) VerifyTransaction(t Transaction) bool {
 	if t.IsGenesisTransaction() {
 		// This is genesis transaction.
@@ -339,8 +338,57 @@ func (n *Node) VerifyTransaction(t Transaction) bool {
 
 		return t.VerifyTransactionID() && t.VerifyRequesterSig() && t.VerifyRequesteeSig()
 	}
+
 	// This is not genesis transaction.
-	// TODO:
+	// TODO: Verify credits.
+	if !t.VerifyTransactionID() {
+		fmt.Println("b")
+	}
+
+	if !t.VerifyRequesterSig() {
+		fmt.Println("c")
+	}
+
+	if !t.VerifyRequesteeSig() {
+		fmt.Println("d")
+	}
+
+	return t.VerifyTransactionID() && t.VerifyRequesterSig() && t.VerifyRequesteeSig()
+}
+
+// VerifyPendingTransaction ... Verify a pending transaction.
+func (n *Node) VerifyPendingTransaction(t Transaction) bool {
+	// First check requestee public key
+	if !bytes.Equal(t.RequesteePK(), n.PublicKey()) {
+		return false
+	}
+
+	if !t.VerifyRequesterSig() {
+		return false
+	}
+
+	return true
+}
+
+// SetGenesisTransaction ... Set genesis transaction.
+// NOTE: This function can only be called once.
+func (n *Node) SetGenesisTransaction(t Transaction) bool {
+	if n.PrevTransaction() != nil {
+		return false
+	}
+
+	n.PreviousTransaction = &t
+
+	return true
+}
+
+// UpdatePrevTransaction ... Update previous transaction.
+func (n *Node) UpdatePrevTransaction(t Transaction) bool {
+	if n.PrevTransaction() != nil {
+		n.PreviousTransaction = &t
+
+		return true
+	}
 
 	return false
 }
@@ -418,12 +466,24 @@ func (n *Node) IsInTransactionsPool(id []byte) bool {
 	return false
 }
 
-// RemoveTransactionByID ... Remove transaction by id.
-func (n *Node) RemoveTransactionByID(id []byte) {
+// RemoveTransactionByIDFromPool ... Remove transaction by id.
+func (n *Node) RemoveTransactionByIDFromPool(id []byte) {
 	n.TransactionsPoolLock.Lock()
 	defer n.TransactionsPoolLock.Unlock()
 
 	delete(n.TransactionsPool, Base58Encode(id))
+}
+
+// CheckAndAddPendingTransaction ... Check and add transaction to pending pool.
+func (n *Node) CheckAndAddPendingTransaction(t Transaction) {
+	n.PendingTransactionsLock.Lock()
+	defer n.PendingTransactionsLock.Unlock()
+
+	if n.PendingTransactions[Base58Encode(t.ID())] != nil {
+		return
+	}
+
+	n.PendingTransactions[Base58Encode(t.ID())] = &t
 }
 
 // GetPendingTransactionByID ... Get pending transaction by id.

@@ -102,6 +102,29 @@ func TestSendTransactionDataMarshalJson(t *testing.T) {
 	}
 }
 
+// Test PendingTransactionData marshal function.
+func TestPendingTransactionDataMarshalJson(t *testing.T) {
+	t1 := GenRandomTransaction()
+
+	pt1 := PendingTransactionData{t1}
+
+	pt1json, err := pt1.MarshalJson()
+	if err != nil {
+		panic(fmt.Errorf("(PendingTransactionData) MarshalJson() testing failed"))
+	}
+
+	var pt2 PendingTransactionData
+
+	err = pt2.UnmarshalJson(pt1json)
+	if err != nil {
+		panic(fmt.Errorf("(*PendingTransactionData) UnmarshalJson() testing failed"))
+	}
+
+	if !pt1.EqualWith(pt2) {
+		panic(fmt.Errorf("(PendingTransactionData) MarshalJson()/UnmarshalJson() testing failed"))
+	}
+}
+
 // Test Message marshal function.
 func TestMessageMarshalJson(t *testing.T) {
 	m1 := GenRandomMessage()

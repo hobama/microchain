@@ -96,15 +96,18 @@ func checkGenesisCommand(s string) (bool, string, string) {
 	return true, "", tokens[1]
 }
 
-func checkConfirmCommand(s string) (bool, string, []string) {
+func checkConfirmCommand(s string) (bool, string, []byte) {
 	if !strings.HasPrefix(s, "confirm") {
-		return false, fmt.Sprintf("Unknown command: %s, do you mean: confirm ?\n", s), []string{}
+		return false, fmt.Sprintf("Unknown command: %s, do you mean: confirm ?\n", s), []byte{}
 	}
 
 	// Remove `confirm`
 	s = strings.TrimSpace(s[7:])
 
-	// TODO:
+	id := core.Base58Decode(s)
+	if len(id) == 0 {
+		return false, fmt.Sprintf("Invalid transaction id"), []byte{}
+	}
 
-	return true, "", []string{}
+	return true, "", id
 }
