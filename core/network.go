@@ -3,7 +3,6 @@ package core
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"net"
 	"sort"
 	"strconv"
@@ -152,10 +151,16 @@ func (n *Node) PublicKey() []byte {
 	return n.Keypair.Public
 }
 
-// Sign ... Sign
+// Sign ... Sign.
 func (n *Node) Sign(data []byte) []byte {
 	sig, _ := n.Keypair.Sign(data)
 	return sig
+}
+
+// SignTransaction ... Sign transaction.
+func (n *Node) SignTransaction(t Transaction) Transaction {
+	t.Header.RequesteeSignature = n.Sign(SHA256(t.Meta))
+	return t
 }
 
 // UpdateKeyPair ... Update key pair for node.
@@ -341,17 +346,6 @@ func (n *Node) VerifyTransaction(t Transaction) bool {
 
 	// This is not genesis transaction.
 	// TODO: Verify credits.
-	if !t.VerifyTransactionID() {
-		fmt.Println("b")
-	}
-
-	if !t.VerifyRequesterSig() {
-		fmt.Println("c")
-	}
-
-	if !t.VerifyRequesteeSig() {
-		fmt.Println("d")
-	}
 
 	return t.VerifyTransactionID() && t.VerifyRequesterSig() && t.VerifyRequesteeSig()
 }

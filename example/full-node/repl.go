@@ -31,7 +31,7 @@ func (c *client) repl() {
 
 			for k, n := range c.node.RoutingTable {
 				c.terminal <- "---\n"
-				c.terminal <- fmt.Sprintf("ID: %s\nAddress: %s\nLastseen: %d\nPublic key: %s\n", n.Addr(), n.Address, n.Lastseen, k)
+				c.terminal <- fmt.Sprintf("ID\t: %s\nAddress\t: %s\nLastseen: %d\n", k, n.Address, n.Lastseen)
 			}
 		} else if pingNodeOpt.MatchString(input) {
 			// Ping node.
@@ -45,7 +45,7 @@ func (c *client) repl() {
 				for _, addr := range addrs {
 					c.terminal <- fmt.Sprintf("ping node %s ...\n", addr)
 
-					err := c.pingNode(addr, c.pingNodeCallBack)
+					err := c.pingNode(addr)
 
 					if err != nil {
 						c.terminal <- err.Error() + "\n"
@@ -71,7 +71,7 @@ func (c *client) repl() {
 
 			for _, t := range ts {
 				c.terminal <- "---\n"
-				c.terminal <- fmt.Sprintf("ID %s\nFrom: %s\nTo: %s\nData: %s\nTimestamp: %d\n", core.Base58Encode(t.ID()),
+				c.terminal <- fmt.Sprintf("ID\t : %s\nFrom\t : %s\nTo\t : %s\nData\t : %s\nTimestamp: %d\n", core.Base58Encode(t.ID()),
 					core.Base58Encode(t.RequesterPK()),
 					core.Base58Encode(t.RequesteePK()),
 					string(t.Meta), t.Timestamp())
@@ -140,67 +140,5 @@ func (c *client) repl() {
 		} else {
 			c.terminal <- fmt.Sprintf("Unknown command: %s\n", input)
 		}
-	}
-}
-
-func (c *client) pingNode(addr string, pingNodeCallback func([]byte) error) error {
-	p := core.NewPingMessage(c.node.PublicKey(), c.node.Addr())
-	pjson, err := p.MarshalJson()
-	if err != nil {
-		return err
-	}
-
-	err = c.node.Send(addr, pjson, pingNodeCallback)
-
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (c *client) pingNodeCallBack(data []byte) error {
-	if string(data) != "pong" {
-		return fmt.Errorf("Invalid response for ping")
-	}
-
-	return nil
-}
-
-// Send pending transaction.
-func (c *client) sendPendingTransaction(t core.Transaction) {
-	p := core.NewPendingTransactionMessage(t)
-
-	pjson, err := p.MarshalJson()
-	if err != nil {
-		return
-	}
-
-	b, target := c.node.GetNodeByPublicKey(t.RequesteePK())
-	if !b {
-		return
-	}
-
-	_ = c.node.Send(target.Addr(), pjson, func([]byte) error { return nil })
-
-	return
-}
-
-func (c *client) broadcastGenesisTransaction(data string) {
-
-	t := c.node.NewGenesisTransaction([]byte(data))
-
-	c.node.PreviousTransaction = &t
-
-	m := core.NewSendTransactionMessage(t)
-
-	mjson, _ := m.MarshalJson()
-
-	c.node.Broadcast(mjson, func([]byte) error { return nil })
-}
-
-func (c *client) printLoop() {
-	for s := range c.terminal {
-		fmt.Printf("%s", s)
 	}
 }

@@ -87,7 +87,6 @@ func pingResp(m core.IncommingMessage, c *client) {
 
 	err := p.UnmarshalJson(m.Content.Data)
 	if err != nil {
-		c.logger.Error.Println(err)
 		return
 	}
 
@@ -121,7 +120,6 @@ func syncNodesResp(m core.IncommingMessage, c *client) {
 
 	err := sn.UnmarshalJson(m.Content.Data)
 	if err != nil {
-		c.logger.Error.Println(err)
 		return
 	}
 
@@ -129,8 +127,6 @@ func syncNodesResp(m core.IncommingMessage, c *client) {
 	for _, n := range sn.Nodes {
 		c.node.CheckAndAddNodeToRoutingTable(n)
 	}
-
-	m.Conn.Write([]byte("pong"))
 }
 
 // Callback function for sync transactions.
@@ -139,7 +135,6 @@ func syncTransactionsResp(m core.IncommingMessage, c *client) {
 
 	err := st.UnmarshalJson(m.Content.Data)
 	if err != nil {
-		c.logger.Error.Println(err)
 		return
 	}
 
@@ -147,8 +142,6 @@ func syncTransactionsResp(m core.IncommingMessage, c *client) {
 		// TODO: check transactions.
 		c.node.CheckAndAddTransactionToPool(tr)
 	}
-
-	m.Conn.Write([]byte("pong"))
 }
 
 // Callback for send transaction.
@@ -157,14 +150,12 @@ func sendTransactionResp(m core.IncommingMessage, c *client) {
 
 	err := st.UnmarshalJson(m.Content.Data)
 	if err != nil {
-		c.logger.Error.Println(err)
 		return
 	}
 
 	t := st.Transaction
 
 	if c.node.VerifyTransaction(t) {
-
 		// Add it into transactions pool
 		c.node.CheckAndAddTransactionToPool(t)
 	}
@@ -189,13 +180,6 @@ func pendingTransactionResp(m core.IncommingMessage, c *client) {
 	if !c.node.IsInPendingTransactions(t.ID()) {
 		c.node.CheckAndAddPendingTransaction(t)
 	}
-}
-
-// Run web server.
-func (c *client) runWebServer(port int) {
-	http.HandleFunc("/", c.indexHandler)
-
-	c.logger.Error.Fatal(http.ListenAndServe(":"+strconv.Itoa(port), nil))
 }
 
 // Maintain routing table.
@@ -300,13 +284,14 @@ func (c *client) newPendingTransaction(id []byte, data string) core.Transaction 
 	return core.Transaction{Header: h, Meta: meta, Output: txo}
 }
 
+// Confirm pending transaction.
 func (c *client) confirmPendingTransaction(id []byte) {
 	b, t := c.node.GetPendingTransactionByID(id)
 	if !b {
 		return
 	}
 
-	t.Header.RequesteeSignature = c.node.Sign(core.SHA256(t.Meta))
+	t = c.node.SignTransaction(t)
 
 	m := core.NewSendTransactionMessage(t)
 
@@ -316,6 +301,76 @@ func (c *client) confirmPendingTransaction(id []byte) {
 	}
 
 	c.node.Broadcast(mjson, func([]byte) error { return nil })
+}
+
+// Ping node.
+func (c *client) pingNode(addr string) error {
+	p := core.NewPingMessage(c.node.PublicKey(), c.node.Addr())
+	pjson, err := p.MarshalJson()
+	if err != nil {
+		return err
+	}
+
+	err = c.node.Send(addr, pjson, func(data []byte) error {
+		if string(data) != "pong" {
+			return fmt.Errorf("Invalid response for ping")
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Send pending transaction.
+func (c *client) sendPendingTransaction(t core.Transaction) {
+	p := core.NewPendingTransactionMessage(t)
+
+	pjson, err := p.MarshalJson()
+	if err != nil {
+		return
+	}
+
+	b, target := c.node.GetNodeByPublicKey(t.RequesteePK())
+	if !b {
+		return
+	}
+
+	_ = c.node.Send(target.Addr(), pjson, func([]byte) error { return nil })
+
+	return
+}
+
+// Broadcast genesis transaction.
+func (c *client) broadcastGenesisTransaction(data string) {
+
+	t := c.node.NewGenesisTransaction([]byte(data))
+
+	c.node.PreviousTransaction = &t
+
+	m := core.NewSendTransactionMessage(t)
+
+	mjson, _ := m.MarshalJson()
+
+	c.node.Broadcast(mjson, func([]byte) error { return nil })
+}
+
+// Print loop
+func (c *client) printLoop() {
+	for s := range c.terminal {
+		fmt.Printf("%s", s)
+	}
+}
+
+// Run web server.
+func (c *client) runWebServer(port int) {
+	http.HandleFunc("/", c.indexHandler)
+
+	c.logger.Error.Fatal(http.ListenAndServe(":"+strconv.Itoa(port), nil))
 }
 
 func (c *client) indexHandler(w http.ResponseWriter, r *http.Request) {
