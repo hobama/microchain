@@ -29,9 +29,11 @@ func (c *client) repl() {
 
 			c.terminal <- fmt.Sprintf("Currently, %d nodes in routing table.\n", len(c.node.RoutingTable))
 
-			for k, n := range c.node.RoutingTable {
+			_, ns := c.node.GetNodesOfRoutingTable()
+
+			for _, n := range ns {
 				c.terminal <- "---\n"
-				c.terminal <- fmt.Sprintf("ID\t: %s\nAddress\t: %s\nLastseen: %d\n", k, n.Address, n.Lastseen)
+				c.terminal <- fmt.Sprintf("ID\t: %s\nAddress\t: %s\nLastseen: %d\n", n.PK(), n.Addr(), n.Lastseen)
 			}
 		} else if pingNodeOpt.MatchString(input) {
 			// Ping node.

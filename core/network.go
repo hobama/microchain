@@ -27,6 +27,11 @@ func (rn *RemoteNode) Addr() string {
 	return rn.Address
 }
 
+// PK ... Get public key of remote node.
+func (rn *RemoteNode) PK() string {
+	return Base58Encode(rn.PublicKey)
+}
+
 // MarshalJson ... Serialize RemoteNode into Json.
 func (rn RemoteNode) MarshalJson() ([]byte, error) {
 	return json.Marshal(rn)

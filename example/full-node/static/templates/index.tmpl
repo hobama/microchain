@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+        <script src="https://cdn.jsdelivr.net/npm/vue"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.18.0/axios.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/base-58@0.0.1/Base58.min.js"></script>
+        
+
+        <style>
+            #transactions {
+                font-family: 'Lucida Console', monospace;
+            }
+        </style>
+</head>
+<body>
+    <div id="transactions_container">
+        <ul id="transactions">
+            <li v-for="(t, _) in transactions">
+                ID: %% t.header.id %%                           <br>
+                Previous ID: %% t.header.prev_id %% <br>
+                Timestamp: %% t.header.timestamp %%             <br>
+                From: %% t.header.requester_pk %%               <br>
+                To: %% t.header.requestee_pk %%                 <br>
+                Data: %% t.meta %%                              <br>
+            </li>
+        </ul>
+    </div>
+    <div id="nodes_container">
+
+    </div>
+</body>
+
+<script>
+
+    var transactions = new Vue({
+        delimiters: ['%%', '%%'],
+        el: '#transactions',
+        data() {
+            return {
+                transactions: null
+            }
+        },
+        mounted () {
+            axios
+                .get({{ .URL }} + "transactions")
+                .then(r => {
+                    r.data.map(t => process_transaction(t))
+                    this.transactions = r.data
+                })
+        }
+    })
+
+</script>
+
+<script>
+    function process_transaction(t) {
+        t.header.id = Base58.encode(Uint8Array.from(atob(t.header.id), c => c.charCodeAt(0)))
+        t.header.prev_id = Base58.encode(Uint8Array.from(atob(t.header.prev_id), c => c.charCodeAt(0)))
+        t.header.requester_pk = Base58.encode(Uint8Array.from(atob(t.header.requester_pk), c => c.charCodeAt(0)))
+        t.header.requestee_pk = Base58.encode(Uint8Array.from(atob(t.header.requestee_pk), c => c.charCodeAt(0)))
+        t.meta = atob(t.meta)
+    }
+
+</script>

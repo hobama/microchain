@@ -2,8 +2,6 @@ package main
 
 import (
 	"fmt"
-	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/vgxbj/microchain/core"
@@ -364,15 +362,4 @@ func (c *client) printLoop() {
 	for s := range c.terminal {
 		fmt.Printf("%s", s)
 	}
-}
-
-// Run web server.
-func (c *client) runWebServer(port int) {
-	http.HandleFunc("/", c.indexHandler)
-
-	c.logger.Error.Fatal(http.ListenAndServe(":"+strconv.Itoa(port), nil))
-}
-
-func (c *client) indexHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "This is a website server by a Go HTTP server.")
 }
