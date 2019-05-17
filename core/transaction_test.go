@@ -74,14 +74,14 @@ func TestTXOutputMarshalJson(t *testing.T) {
 func TestTransactionHeaderMarshalJson(t *testing.T) {
 	th1 := GenRandomTransactionHeader()
 
-	th1json, err := th1.MarshalJson()
+	th1json, err := th1.MarshalJSON()
 	if err != nil {
 		panic(fmt.Errorf("(TransactionHeader) MarshalJson() testing failed"))
 	}
 
 	var th2 TransactionHeader
 
-	err = th2.UnmarshalJson(th1json)
+	err = th2.UnmarshalJSON(th1json)
 	if err != nil {
 		panic(fmt.Errorf("(*TransactionHeader) UnmarshalJson() testing failed"))
 	}
@@ -93,21 +93,21 @@ func TestTransactionHeaderMarshalJson(t *testing.T) {
 
 // Test Transaction marshal function.
 func TestTransactionMarshalJson(t *testing.T) {
-	tr1 := GenRandomTransaction()
+	t1 := GenRandomTransaction()
 
-	tr1json, err := tr1.MarshalJson()
+	t1json, err := t1.MarshalJSON()
 	if err != nil {
 		panic(fmt.Errorf("(Transaction) MarshalJson() testing failed"))
 	}
 
-	var tr2 Transaction
+	var t2 Transaction
 
-	err = tr2.UnmarshalJson(tr1json)
+	err = t2.UnmarshalJSON(t1json)
 	if err != nil {
 		panic(fmt.Errorf("(*Transaction) UnmarshalJson() testing failed"))
 	}
 
-	if !tr1.EqualWith(tr2) {
+	if !t1.EqualWith(t2) {
 		panic(fmt.Errorf("(Transaction) MarshalJson()/UnmarshalJson() testing failed"))
 	}
 }

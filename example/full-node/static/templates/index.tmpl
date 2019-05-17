@@ -1,33 +1,297 @@
 <!doctype html>
 <html lang="en">
 <head>
-        <script src="https://cdn.jsdelivr.net/npm/vue"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.18.0/axios.min.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/base-58@0.0.1/Base58.min.js"></script>
-        
+    <meta charset="utf-8"/>
+    <script src="https://cdn.jsdelivr.net/npm/vue"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.18.0/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/base-58@0.0.1/Base58.min.js"></script>
 
-        <style>
-            #transactions {
-                font-family: 'Lucida Console', monospace;
-            }
-        </style>
+    <!-- Font Awesome -->
+    <script defer src="https://use.fontawesome.com/releases/v5.8.2/js/all.js" integrity="sha384-DJ25uNYET2XCl5ZF++U8eNxPWqcKohUUBUpKGlNLMchM7q4Wjg2CUpjHLaL8yYPH" crossorigin="anonymous"></script>
+    
+    <!-- Bootstrap -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+    
+    <style>
+
+        #sidebar {
+            //width: 250px;
+            min-height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 999;
+        }
+
+        #content {
+            //
+            margin-top: 20px;
+            max-width: 1000px;
+            min-width: 900px;
+            float: right;
+            position: relative;
+        }
+
+        a[data-toggle="collapse"] {
+            position: relative;
+        }
+
+        .dropdown-toggle::after {
+            display: block;
+            position: absolute;
+            top: 50%;
+            right: 20px;
+            transform: translateY(-50%);
+        }
+        p {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.1em;
+            font-weight: 300;
+            line-height: 1.7em;
+            color: #999;
+        }
+
+        a, a:hover, a:focus {
+            color: inherit;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+
+        #sidebar {
+            background: #7386D5;
+            color: #fff;
+            transition: all 0.3s;
+        }
+
+        #sidebar .sidebar-header {
+            padding: 20px;
+            background: #6d7fcc;
+        }
+
+        #sidebar ul.components {
+            padding: 20px 0;
+            border-bottom: 1px solid #7386D5;
+        }
+
+        #sidebar ul p {
+            color: #fff;
+            padding: 10px;
+        }
+
+        #sidebar ul li a {
+            padding: 10px;
+            font-size: 1.1em;
+            display: block;
+        }
+
+        #sidebar ul li a:hover {
+            color: #7386D5;
+            background: #fff;
+        }
+
+        #sidebar ul li.active > a, a[aria-expanded="true"] {
+            color: #fff;
+            background: #6d7fcc;
+        }
+        ul a {
+            font-size: 0.9em !important;
+            padding-left: 10px !important;
+            background: #6d7fcc;
+        }
+        ul {
+            list-style-type: none;
+        }
+
+        .labels tr td {
+            background-color: #2cc16a;
+            font-weight: bold;
+            color: #fff;
+        }
+
+        .label tr td label {
+            display: block;
+        }
+
+        .table td {
+            font-family:'Lucida Console', monospace;
+        }
+
+        [data-toggle="toggle"] {
+            display: none;
+        }
+    </style>
 </head>
 <body>
-    <div id="transactions_container">
-        <ul id="transactions">
-            <li v-for="(t, _) in transactions">
-                ID: %% t.header.id %%                           <br>
-                Previous ID: %% t.header.prev_id %% <br>
-                Timestamp: %% t.header.timestamp %%             <br>
-                From: %% t.header.requester_pk %%               <br>
-                To: %% t.header.requestee_pk %%                 <br>
-                Data: %% t.meta %%                              <br>
-            </li>
-        </ul>
-    </div>
-    <div id="nodes_container">
+        <div id="container"  class="row">
+            <div id="sidebar-container"  class="col-2">
+            <nav id="sidebar">
+                <div class="sidebar-header">
+                    <h3><i class="fas fa-dice-d20 fa-lg"></i> Microchain</h3>
+                </div>
 
-    </div>
+                <ul class="list-unstyled components">
+                    <li>
+                        <a href="#"> Home </a>
+                    </li>
+                    <li>
+                        <a href="#nodes"> Nodes </a>
+                    </li>
+                    <li>
+                        <a href="#pageSubmenu" data-toggle="collapse" aria-expanded="false" class="dropdown-toggle">Transactions</a>
+                        <ul class="collapse list-unstyled" id="pageSubmenu">
+                            <li>
+                                <a href="#pendings">Pending Transactions</a>
+                            </li>
+                            <li>
+                                <a href="#transactions">Transactions</a>
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
+            </nav>
+            </div>
+
+            <div id="content" class="col-10">
+                <div id="transactions_container">
+                    <ul id="transactions" class="list-group">
+                        <h3> Merged Transactions </h3>
+                        <li v-for="(t, _) in transactions">
+                            <table class="table">
+                                <tbody>
+                                <tr>
+                                    <th> <i class="fas fa-calendar-check"></i> </th>
+                                    <td>
+                                        <label v-bind:for="t.header.id"> %% t.header.id.slice(0, 32) %% ... </label>
+                                        <input type="checkbox" v-bind:name="t.header.id" v-bind:id="t.header.id" data-toggle="toggle">
+                                    </td>
+                                </tr>
+                                </tbody>
+                                <tbody class="hide" style="display: none;">
+                                <tr>
+                                    <th scope="row"> Previous </th>
+                                    <td> %% t.header.prev_id.slice(0, 32) %% ... </td>
+                                </tr>
+
+                                <tr>
+                                    <th scope="row"> Timestamp </th>
+                                    <td> %% t.header.timestamp %% </td>
+                                </tr>
+                                <tr>
+                                    <th scope="row"> From </th>
+                                    <td> %% t.header.requester_pk.slice(0, 32) %% ... </td>
+                                </tr>
+                                <tr>
+                                    <th scope="row"> To </th>
+                                    <td> %% t.header.requestee_pk.slice(0, 32) %% ... </td>
+                                </tr>
+                                <tr>
+                                    <th scope="row"> Data </th>
+                                    <td> %% t.meta %% </td>
+                                </tr>
+                                </table>
+                            </table>
+                        </li>
+                </div>
+                
+
+                <div id="nodes_container">
+                    <ul id="nodes" class="list-group">
+                        <h3>Active Nodes </h3>
+                        <li v-for="(n, _) in nodes">
+                            <table class="table">
+                                <tbody>
+                                <tr>
+                                    <th> <i class="fas fa-project-diagram"></i> </th>
+                                    <td>
+                                        <label v-bind:for="n.public_key"> %% n.public_key.slice(0, 32) %% ... </label>
+                                        <input type="checkbox" v-bind:name="n.public_key" v-bind:id="n.public_key" data-toggle="toggle">
+                                    </td>
+                                </tr>
+                                </tbody>
+                                <tbody class="hide" style="display: none;">
+                                <tr>
+                                    <th scope="row"> Address </th>
+                                    <td> %% n.address %% </td>
+                                </tr>
+
+                                <tr>
+                                    <th scope="row"> Lastseen </th>
+                                    <td> %% n.lastseen %% </td>
+                                </tr>
+                                </table>
+                            </table>
+                        </li>
+                    </ul>
+                </div>
+
+                <div id="pendings_container">
+                    <ul id="pendings" class="list-group">
+                        <h3> Pending Transactions </h3>
+                        <li v-for="(t, _) in pendings">
+                            <table class="table">
+                                <tbody>
+                                <tr>
+                                    <th> <i class="fas fa-question-circle"></i> </th>
+                                    <td>
+                                        <label v-bind:for="t.header.id"> %% t.header.id.slice(0, 32) %% ... </label>
+                                        <input type="checkbox" v-bind:name="t.header.id" v-bind:id="t.header.id" data-toggle="toggle">
+                                    </td>
+                                </tr>
+                                </tbody>
+                                <tbody class="hide" style="display: none;">
+                                <tr>
+                                    <th scope="row"> Previous </th>
+                                    <td> %% t.header.prev_id.slice(0, 32) %% ... </td>
+                                </tr>
+
+                                <tr>
+                                    <th scope="row"> Timestamp </th>
+                                    <td> %% t.header.timestamp %% </td>
+                                </tr>
+                                <tr>
+                                    <th scope="row"> From </th>
+                                    <td> %% t.header.requester_pk.slice(0, 32) %% ... </td>
+                                </tr>
+                                <tr>
+                                    <th scope="row"> To </th>
+                                    <td> %% t.header.requestee_pk.slice(0, 32) %% ... </td>
+                                </tr>
+                                <tr>
+                                    <th scope="row"> Data </th>
+                                    <td> %% t.meta %% </td>
+                                </tr>
+                                <tr>
+                                    <th scope="row"> Confirm </th>
+                                    <td>
+                                    <form action="{{ .URL }}" method="post">
+                                        <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="radio" name="confirm" id="confirm" value="1" checked>
+                                        <label class="form-check-label" for="confirm">
+                                            Confirm
+                                        </label>
+                                        </div>
+                                        <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="radio" name="confirm" id="dismiss" value="0">
+                                        <label class="form-check-label" for="dismiss">
+                                            Dismiss
+                                        </label>
+                                        </div>
+                                        <input type="hidden" id="pending_id" name="pending_id" v-bind:value=t.header.id>
+                                        <span><button type="submit" class="btn btn-mini" style="color: #FFFFFF; background: #7386D5"> Submit </button></span>
+                                    </form>
+                                    </td>
+                                </tr>
+                                </table>
+                            </table>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
 </body>
 
 <script>
@@ -47,18 +311,55 @@
                     r.data.map(t => process_transaction(t))
                     this.transactions = r.data
                 })
-        }
+        },
     })
 
+    var nodes = new Vue({
+        delimiters: ['%%', '%%'],
+        el: '#nodes',
+        data() {
+            return {
+                nodes: null
+            }
+        },
+        mounted () {
+            axios
+                .get({{ .URL }} + "nodes")
+                .then(r => {
+                    this.nodes = r.data
+                })
+        },
+    })
+
+    var pendings = new Vue({
+        delimiters: ['%%', '%%'],
+        el: '#pendings',
+        data() {
+            return {
+                pendings: null
+            }
+        },
+        mounted () {
+            axios
+                .get({{ .URL }} + "pendings")
+                .then(r => {
+                    r.data.map(t => process_transaction(t))
+                    this.pendings = r.data
+                })
+        },
+    })
+</script>
+
+<script>
+    $(document).ready(function() {
+        $('[data-toggle="toggle"]').change(function(){
+            $(this).parents().next('.hide').toggle();
+        });
+    });
 </script>
 
 <script>
     function process_transaction(t) {
-        t.header.id = Base58.encode(Uint8Array.from(atob(t.header.id), c => c.charCodeAt(0)))
-        t.header.prev_id = Base58.encode(Uint8Array.from(atob(t.header.prev_id), c => c.charCodeAt(0)))
-        t.header.requester_pk = Base58.encode(Uint8Array.from(atob(t.header.requester_pk), c => c.charCodeAt(0)))
-        t.header.requestee_pk = Base58.encode(Uint8Array.from(atob(t.header.requestee_pk), c => c.charCodeAt(0)))
         t.meta = atob(t.meta)
     }
-
 </script>

@@ -15,20 +15,38 @@ type TXOutput struct {
 
 // TransactionHeader ...
 type TransactionHeader struct {
-	TransactionID      []byte `json:"id"`            // SHA256(requesterPK, requesteePK, timestamp)
+	TransactionID      []byte // SHA256(requesterPK, requesteePK, timestamp)
+	Timestamp          int    // Unix timestamp
+	PrevTransactionID  []byte // Previous transaction ID
+	RequesterPublicKey []byte // Requester public key
+	RequesterSignature []byte // Requester signature
+	RequesteePublicKey []byte // Requestee public key
+	RequesteeSignature []byte // Requestee signature
+}
+
+// TransactionHeaderJSONImpl ...
+type TransactionHeaderJSONImpl struct {
+	TransactionID      string `json:"id"`            // SHA256(requesterPK, requesteePK, timestamp)
 	Timestamp          int    `json:"timestamp"`     // Unix timestamp
-	PrevTransactionID  []byte `json:"prev_id"`       // Previous transaction ID
-	RequesterPublicKey []byte `json:"requester_pk"`  // Requester public key
-	RequesterSignature []byte `json:"requester_sig"` // Requester signature
-	RequesteePublicKey []byte `json:"requestee_pk"`  // Requestee public key
-	RequesteeSignature []byte `json:"requestee_sig"` // Requestee signature
+	PrevTransactionID  string `json:"prev_id"`       // Previous transaction ID
+	RequesterPublicKey string `json:"requester_pk"`  // Requester public key
+	RequesterSignature string `json:"requester_sig"` // Requester signature
+	RequesteePublicKey string `json:"requestee_pk"`  // Requestee public key
+	RequesteeSignature string `json:"requestee_sig"` // Requestee signature
 }
 
 // Transaction ...
 type Transaction struct {
-	Header TransactionHeader `json:"header"` // Header
-	Meta   []byte            `json:"meta"`   // Meta data field
-	Output TXOutput          `json:"output"` // TXOutput
+	Header TransactionHeader // Header
+	Meta   []byte            // Meta data field
+	Output TXOutput          // TXOutput
+}
+
+// TransactionJSONImpl ...
+type TransactionJSONImpl struct {
+	Header TransactionHeader `json:"header"`
+	Meta   []byte            `json:"meta"`
+	Output TXOutput          `json:"output"`
 }
 
 // EqualWith ... Test if two TXOutputs are equal.
@@ -87,14 +105,37 @@ func (h TransactionHeader) EqualWith(temp TransactionHeader) bool {
 	return true
 }
 
-// MarshalJson ... Serialize transaction header into Json.
-func (h TransactionHeader) MarshalJson() ([]byte, error) {
-	return json.Marshal(h)
+// MarshalJSON ... Serialize transaction header into Json.
+func (h TransactionHeader) MarshalJSON() ([]byte, error) {
+	return json.Marshal(&TransactionHeaderJSONImpl{
+		TransactionID:      Base58Encode(h.TransactionID),
+		Timestamp:          h.Timestamp,
+		PrevTransactionID:  Base58Encode(h.PrevTransactionID),
+		RequesterPublicKey: Base58Encode(h.RequesterPublicKey),
+		RequesterSignature: Base58Encode(h.RequesterSignature),
+		RequesteePublicKey: Base58Encode(h.RequesteePublicKey),
+		RequesteeSignature: Base58Encode(h.RequesteeSignature),
+	})
 }
 
-// UnmarshalJson ... Read transaction header from Json.
-func (h *TransactionHeader) UnmarshalJson(data []byte) error {
-	return json.Unmarshal(data, &h)
+// UnmarshalJSON ... Read transaction header from Json.
+func (h *TransactionHeader) UnmarshalJSON(data []byte) error {
+	var hJSONImpl TransactionHeaderJSONImpl
+
+	err := json.Unmarshal(data, &hJSONImpl)
+	if err != nil {
+		return err
+	}
+
+	h.TransactionID = Base58Decode(hJSONImpl.TransactionID)
+	h.Timestamp = hJSONImpl.Timestamp
+	h.PrevTransactionID = Base58Decode(hJSONImpl.PrevTransactionID)
+	h.RequesterPublicKey = Base58Decode(hJSONImpl.RequesterPublicKey)
+	h.RequesterSignature = Base58Decode(hJSONImpl.RequesterSignature)
+	h.RequesteePublicKey = Base58Decode(hJSONImpl.RequesteePublicKey)
+	h.RequesteeSignature = Base58Decode(hJSONImpl.RequesteeSignature)
+
+	return nil
 }
 
 // ID ... Get transaction id.
@@ -169,14 +210,30 @@ func (t Transaction) EqualWith(temp Transaction) bool {
 	return true
 }
 
-// MarshalJson ... Serialize transaction into Json.
-func (t Transaction) MarshalJson() ([]byte, error) {
-	return json.Marshal(t)
+// MarshalJSON ... Serialize transaction into Json.
+func (t Transaction) MarshalJSON() ([]byte, error) {
+
+	return json.Marshal(&TransactionJSONImpl{
+		Header: t.Header,
+		Meta:   t.Meta,
+		Output: t.Output,
+	})
 }
 
-// UnmarshalJson ... Read transaction from Json.
-func (t *Transaction) UnmarshalJson(data []byte) error {
-	return json.Unmarshal(data, &t)
+// UnmarshalJSON ... Read transaction from Json.
+func (t *Transaction) UnmarshalJSON(data []byte) error {
+	var tt TransactionJSONImpl
+
+	err := json.Unmarshal(data, &tt)
+	if err != nil {
+		return err
+	}
+
+	t.Header = tt.Header
+	t.Meta = tt.Meta
+	t.Output = tt.Output
+
+	return nil
 }
 
 // VerifyTransactionID ... Verify transaction id.

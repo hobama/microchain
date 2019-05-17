@@ -31,14 +31,14 @@ func GenRandomRemoteNodes(n int) []RemoteNode {
 func TestRemoteNodeMarshalJson(t *testing.T) {
 	rn1 := GenRandomRemoteNode()
 
-	rn1json, err := rn1.MarshalJson()
+	rn1json, err := rn1.MarshalJSON()
 	if err != nil {
 		panic(fmt.Errorf("(RemoteNode) MarshalJson() testing failed"))
 	}
 
 	var rn2 RemoteNode
 
-	err = rn2.UnmarshalJson(rn1json)
+	err = rn2.UnmarshalJSON(rn1json)
 	if err != nil {
 		panic(fmt.Errorf("(*RemoteNode) UnmarshalJson() testing failed"))
 	}

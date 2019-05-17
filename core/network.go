@@ -16,10 +16,17 @@ const (
 
 // RemoteNode ... Represent other nodes.
 type RemoteNode struct {
-	PublicKey  []byte        `json:"public_key"` // Public key
-	Address    string        `json:"address"`    // Address
-	Lastseen   int           `json:"lastseen"`   // The unix time of seeing this node last time
-	VerifiedBy []*RemoteNode `json:"-"`          // Nodes that verify this node
+	PublicKey  []byte        // Public key
+	Address    string        // Address
+	Lastseen   int           // The unix time of seeing this node last time
+	VerifiedBy []*RemoteNode // Nodes that verify this node
+}
+
+// RemoteNodeJSONImpl ...
+type RemoteNodeJSONImpl struct {
+	PublicKey string `json:"public_key"`
+	Address   string `json:"address"`
+	Lastseen  int    `json:"lastseen"`
 }
 
 // Addr ... Get address of remote node.
@@ -33,13 +40,28 @@ func (rn *RemoteNode) PK() string {
 }
 
 // MarshalJson ... Serialize RemoteNode into Json.
-func (rn RemoteNode) MarshalJson() ([]byte, error) {
-	return json.Marshal(rn)
+func (rn RemoteNode) MarshalJSON() ([]byte, error) {
+	return json.Marshal(&RemoteNodeJSONImpl{
+		PublicKey: Base58Encode(rn.PublicKey),
+		Address:   rn.Address,
+		Lastseen:  rn.Lastseen,
+	})
 }
 
 // UnmarshalJson ... Read RemoteNode from Json.
-func (rn *RemoteNode) UnmarshalJson(data []byte) error {
-	return json.Unmarshal(data, &rn)
+func (rn *RemoteNode) UnmarshalJSON(data []byte) error {
+	var r RemoteNodeJSONImpl
+
+	err := json.Unmarshal(data, &r)
+	if err != nil {
+		return err
+	}
+
+	rn.PublicKey = Base58Decode(r.PublicKey)
+	rn.Address = r.Address
+	rn.Lastseen = r.Lastseen
+
+	return nil
 }
 
 // EqualWith ... Test if two remote nodes are equal.

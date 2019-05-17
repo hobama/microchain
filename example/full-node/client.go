@@ -11,6 +11,7 @@ type client struct {
 	node     *core.Node
 	terminal chan string
 	logger   *core.Logger
+	webport  int
 }
 
 // Callback functions.
@@ -38,6 +39,7 @@ func newClient(ip string, nodePort, webPort int, l *core.Logger) (*client, error
 		node:     n,
 		terminal: make(chan string),
 		logger:   l,
+		webport:  webPort,
 	}
 
 	// initialize network.

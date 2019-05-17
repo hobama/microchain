@@ -26,8 +26,12 @@ func (c *client) runWebServer(port int) {
 
 func (c *client) indexHandler(w http.ResponseWriter, r *http.Request) {
 
-	t, _ := template.ParseFiles("static/templates/index.tmpl")
-	t.Execute(w, &struct{ URL string }{URL: "http://localhost:5001/api/v1/"})
+	t, err := template.ParseFiles("static/templates/index.tmpl")
+	if err != nil {
+		c.logger.Info.Println(err)
+	}
+
+	t.Execute(w, &struct{ URL string }{URL: "http://localhost:" + strconv.Itoa(c.webport) + apiURL})
 }
 
 func (c *client) getNodesHandler(w http.ResponseWriter, r *http.Request) {
