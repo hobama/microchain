@@ -222,6 +222,17 @@
                                     <th scope="row"> Lastseen </th>
                                     <td> %% n.lastseen %% </td>
                                 </tr>
+                                <tr>
+                                    <th scope="row"> Request </th>
+                                    <td>
+                                    <form action="{{ .URL }}send_transaction" method="post">
+                                        <label class="sr-only" for="data">Data</label>
+                                        <input type="text" class="form-control mb-2 mr-sm-2" name="data" id="data" placeholder="Access Bubble" >
+                                        <input type="hidden" id="node_id" name="node_id" v-bind:value=n.public_key>
+                                        <span><button type="submit" class="btn btn-mini" style="color: #FFFFFF; background: #7386D5"> Submit </button></span>
+                                    </form>
+                                    </td>
+                                </tr>
                                 </table>
                             </table>
                         </li>
@@ -267,7 +278,7 @@
                                 <tr>
                                     <th scope="row"> Confirm </th>
                                     <td>
-                                    <form action="{{ .URL }}" method="post">
+                                    <form action="{{ .URL }}confirm" method="post">
                                         <div class="form-check form-check-inline">
                                         <input class="form-check-input" type="radio" name="confirm" id="confirm" value="1" checked>
                                         <label class="form-check-label" for="confirm">

@@ -301,6 +301,8 @@ func (c *client) confirmPendingTransaction(id []byte) {
 	}
 
 	c.node.Broadcast(mjson, func([]byte) error { return nil })
+
+	c.node.RemovePendingTransactionByID(id)
 }
 
 // Ping node.
